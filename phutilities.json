@@ -1,15 +1,15 @@
 {
-    "appid"    : "496911ed-116e-4c1d-b639-fde4ff363463",
-    "name"   : "Phantom Utilities",
-    "description": "Common utility functions for phantom playbook use.",
+    "appid"    : "f006b969-7253-423f-85df-db0f708826b7",
+    "name"   : "Phantom Common Actions",
+    "description": "Common utility actions for phantom playbook use.",
     "publisher": "Phantom",
     "type": "Generic",
     "main_module": "phutilities_connector.pyc",
-    "app_version": "1.0.0",
+    "app_version": "1.0.1",
     "utctime_updated": "2018-03-09T00:17:26.000000Z",
     "package_name": "phantom_utilities",
     "product_vendor": "Phantom",
-    "product_name": "Phantom Utilities",
+    "product_name": "Phantom Common Actions",
     "product_version_regex": ".*",
     "min_phantom_version": "3.5.188",
     "logo": "logo_phantom.svg",
@@ -19,7 +19,7 @@
         "base_url": {
             "data_type": "string",
             "order": 0,
-            "description": "Phantom IP/Hostname",
+            "description": "Phantom IP/Hostname", (http[s]*)*(?:://)?(.+) Here is the url {1} and here is the prefix {0}
             "required": true
         },
         "auth_token": {
@@ -198,11 +198,11 @@
                     "column_order": 2
                 },
                 {
-                    "data_path": "action_result.parameter.date_string",
+                    "data_path": "action_result.data.*.date_string",
                     "data_type": "string"
                 },
                 {
-                    "data_path": "action_result.parameter.timestamp",
+                    "data_path": "action_result.data.*.timestamp",
                     "data_type": "numeric"
                 }
             ],
@@ -230,7 +230,7 @@
                 "replace": {
                     "description": "Replace",
                     "data_type": "string",
-                    "required": true,
+                    "required": false,
                     "order": 2
                 },
                 "ignore_case": {

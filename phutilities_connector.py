@@ -190,7 +190,7 @@ class phutilities_connector(BaseConnector):
 
         target_string = param['target_string']
         find_str = param['find']
-        replace_str = param['replace']
+        replace_str = param.get('replace', '')
         ignore_case = param['ignore_case']
 
         case_ignore = None
