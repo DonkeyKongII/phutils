@@ -1,4 +1,8 @@
-import datetime
+# File: phutils_connector.py
+# Copyright (c) 2018 Splunk Inc.
+#
+# SPLUNK CONFIDENTIAL - Use or disclosure of this material in whole or in part
+# without a valid written license from Splunk Inc. is PROHIBITED.import datetime
 from phantom.action_result import ActionResult
 import phantom.app as phantom
 from phantom.base_connector import BaseConnector
