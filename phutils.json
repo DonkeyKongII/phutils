@@ -1,10 +1,10 @@
 {
     "appid"    : "f006b969-7253-423f-85df-db0f708826b7",
-    "name"   : "Phantom Common Actions",
+    "name"   : "Phantom Utilities",
     "description": "Common utility actions for phantom playbook use.",
     "publisher": "Phantom",
     "type": "Generic",
-    "main_module": "phutilities_connector.pyc",
+    "main_module": "phutils_connector.pyc",
     "app_version": "1.0.1",
     "utctime_updated": "2018-03-09T00:17:26.000000Z",
     "package_name": "phantom_utilities",
@@ -19,7 +19,7 @@
         "base_url": {
             "data_type": "string",
             "order": 0,
-            "description": "Phantom IP/Hostname", (http[s]*)*(?:://)?(.+) Here is the url {1} and here is the prefix {0}
+            "description": "Phantom IP/Hostname",
             "required": true
         },
         "auth_token": {
