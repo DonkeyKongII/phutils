@@ -44,9 +44,10 @@
         }
     },
     "pip_dependencies": {
-        "pypi": [
+        "wheel": [
             {
-                "module": "python-dateutil"
+                "module": "python-dateutil",
+                "input_file": "wheels/python_dateutil-2.7.3-py2.py3-none-any.whl"
             }
         ]
     },
@@ -290,9 +291,110 @@
             "versions": "EQ(*)"
         },
         {
+            "action": "hash text",
+            "description": "Gets md5, sha1, and sha256 hash of given text.",
+            "verbose": "",
+            "type": "generic",
+            "identifier": "hash_text",
+            "read_only": true,
+            "parameters": {
+                "text": {
+                    "description": "Text",
+                    "required": true,
+                    "data_type": "string",
+                    "order": 0
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "column_name": "Status",
+                    "column_order": 1
+                },
+                {
+                    "data_path": "action_result.parameter.text",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.md5",
+                    "data_type": "string",
+                    "contains": ["fileHash", "md5"]
+                },
+                {
+                    "data_path": "action_result.data.*.sha1",
+                    "data_type": "string",
+                    "contains": ["fileHash", "sha1"]
+                },
+                {
+                    "data_path": "action_result.data.*.sha256",
+                    "data_type": "string",
+                    "contains": ["fileHash", "sha256"]
+                }
+            ],
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "multi collect",
+            "description": "Collects artifact fields from multiple datapaths",
+            "verbose": "An example of when to use this - external IP data is in sourceAddress and destinationAddress and an IP reputation check is needed on both. Multi collect them into one field and then pass the resulting multi-collected field into Virus Total",
+            "type": "generic",
+            "identifier": "multi_collect",
+            "read_only": true,
+            "parameters": {
+                "container_id": {
+                    "description": "Container ID",
+                    "required": true,
+                    "data_type": "numeric",
+                    "order": 0
+                },
+                "data_paths": {
+                    "description": "Data Paths (comma separated)",
+                    "required": true,
+                    "data_type": "string",
+                    "order": 1
+                },
+                "field_name": {
+                    "description": "Output Field Name",
+                    "required": true,
+                    "data_type": "string",
+                    "default": "",
+                    "order": 2
+                },
+                "de_dupe": {
+                    "description": "De-duplicate",
+                    "required": false,
+                    "data_type": "boolean",
+                    "default": "",
+                    "order": 3
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "column_name": "Status",
+                    "column_order": 1
+                },
+                {
+                    "data_path": "action_result.parameter.data_paths",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.field_name",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.added_data.artifact_ids.*.artifact_id",
+                    "data_type": "numeric"
+                }
+            ],
+            "versions": "EQ(*)"
+        },
+        {
             "action": "add to datapath",
             "description": "Adds data to datapath",
-            "verbose": "Use data_list if you want to add one or several values to the datapath that are all of the same type.<br /><br />Example:<br/>Adding three IPs to the datapath would be performed like so - data_list='[\"1.1.1.1\",\"2.2.2.2\",\"8.8.8.8\"]', data_type='string', contains='ip'.<br /><br />If you want to add multiple values to the datapath that are of different types use data_dict. Data_list and data_dict cannot be used together.<br /><br />Example:<br/>To add a string and an IP to the datapath set data_dict to '[{\"data\": \"8.8.8.8\", \"data_type\": \"string\", \"contains\": \"ip\"}, {\"data\": \"some string\", \"data_type\": \"string\"}].<br /><br />If a 'contains' value is provided the 'contains' will be used in the added values datapath name. If no contains is provided then the data type will be used.<br /><br />Example 1:<br/>If contains is 'splunk query' then the data will get added to the datapath as data.*.added_data.*.splunk_query.<br /><br />Example 2:<br />If no 'contains' is provided and the data_type being added is 'numeric' the values will be added to the datapath as data.*.added_data.*.numeric",
+            "verbose": "Use data_list if you want to add one or several values to the datapath that are all of the same type.<br /><br />Example:<br/>Adding three IPs to the datapath would be performed like so - data_list='[\"1.1.1.1\",\"2.2.2.2\",\"8.8.8.8\"]', data_type='string', contains='ip'.<br /><br />If you want to add multiple values to the datapath that are of different types use data_dict. Data_list and data_dict cannot be used together.<br /><br />Example:<br/>To add a string and an IP to the datapath set data_dict to '[{\"data\": \"8.8.8.8\", \"data_type\": \"string\", \"contains\": \"ip\"}, {\"data\": \"some string\", \"data_type\": \"string\"}].<br /><br />If a 'contains' value is provided the 'contains' will be used in the added values datapath name. If no contains is provided then the data type will be used.<br /><br />Example 1:<br/>If contains is 'splunk query' then the data will get added to the datapath as data.*.added_data.splunk_query.<br /><br />Example 2:<br />If no 'contains' is provided and the data_type being added is 'numeric' the values will be added to the datapath as data.*.added_data.numeric",
             "type": "generic",
             "identifier": "add_to_datapath",
             "read_only": true,
@@ -349,1419 +451,1412 @@
                     "data_type": "string"
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.*",
-                    "data_type": "string",
-                    "contains": [
-                        "*"
-                    ]
-                },
-                {
-                    "data_path": "action_result.data.*.added_data.*.alertfind_notification",
+                    "data_path": "action_result.data.*.added_data.alertfind_notification",
                     "data_type": "string",
                     "contains": [
                         "alertfind notification"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.alertfind_team",
+                    "data_path": "action_result.data.*.added_data.alertfind_team",
                     "data_type": "string",
                     "contains": [
                         "alertfind team"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.apk",
+                    "data_path": "action_result.data.*.added_data.apk",
                     "data_type": "string",
                     "contains": [
                         "apk"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.archer_application",
+                    "data_path": "action_result.data.*.added_data.archer_application",
                     "data_type": "string",
                     "contains": [
                         "archer application"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.archer_content_id",
+                    "data_path": "action_result.data.*.added_data.archer_content_id",
                     "data_type": "string",
                     "contains": [
                         "archer content id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.archer_user-friendly_id",
+                    "data_path": "action_result.data.*.added_data.archer_user-friendly_id",
                     "data_type": "string",
                     "contains": [
                         "archer user-friendly id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.arcsight_case_id",
+                    "data_path": "action_result.data.*.added_data.arcsight_case_id",
                     "data_type": "string",
                     "contains": [
                         "arcsight case id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.arcsight_group",
+                    "data_path": "action_result.data.*.added_data.arcsight_group",
                     "data_type": "string",
                     "contains": [
                         "arcsight group"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.arcsight_search_string",
+                    "data_path": "action_result.data.*.added_data.arcsight_search_string",
                     "data_type": "string",
                     "contains": [
                         "arcsight search string"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.athena_named_query",
+                    "data_path": "action_result.data.*.added_data.athena_named_query",
                     "data_type": "string",
                     "contains": [
                         "athena named query"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.athena_query",
+                    "data_path": "action_result.data.*.added_data.athena_query",
                     "data_type": "string",
                     "contains": [
                         "athena query"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.autofocus_tag",
+                    "data_path": "action_result.data.*.added_data.autofocus_tag",
                     "data_type": "string",
                     "contains": [
                         "autofocus tag"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.aws_canonical_id",
+                    "data_path": "action_result.data.*.added_data.aws_canonical_id",
                     "data_type": "string",
                     "contains": [
                         "aws canonical id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.aws_s3_bucket",
+                    "data_path": "action_result.data.*.added_data.aws_s3_bucket",
                     "data_type": "string",
                     "contains": [
                         "aws s3 bucket"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.aws_s3_continuation_token",
+                    "data_path": "action_result.data.*.added_data.aws_s3_continuation_token",
                     "data_type": "string",
                     "contains": [
                         "aws s3 continuation token"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.aws_s3_key",
+                    "data_path": "action_result.data.*.added_data.aws_s3_key",
                     "data_type": "string",
                     "contains": [
                         "aws s3 key"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.bigfix_computer_id",
+                    "data_path": "action_result.data.*.added_data.bigfix_computer_id",
                     "data_type": "string",
                     "contains": [
                         "bigfix computer id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.bigfix_fixlet_id",
+                    "data_path": "action_result.data.*.added_data.bigfix_fixlet_id",
                     "data_type": "string",
                     "contains": [
                         "bigfix fixlet id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.bigfix_site",
+                    "data_path": "action_result.data.*.added_data.bigfix_site",
                     "data_type": "string",
                     "contains": [
                         "bigfix site"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.bmcremedy_first_name",
+                    "data_path": "action_result.data.*.added_data.bmcremedy_first_name",
                     "data_type": "string",
                     "contains": [
                         "bmcremedy first name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.bmcremedy_incident_id",
+                    "data_path": "action_result.data.*.added_data.bmcremedy_incident_id",
                     "data_type": "string",
                     "contains": [
                         "bmcremedy incident id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.bmcremedy_last_name",
+                    "data_path": "action_result.data.*.added_data.bmcremedy_last_name",
                     "data_type": "string",
                     "contains": [
                         "bmcremedy last name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.boolean",
+                    "data_path": "action_result.data.*.added_data.boolean",
                     "data_type": "boolean"
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.bugtraq_id",
+                    "data_path": "action_result.data.*.added_data.bugtraq_id",
                     "data_type": "string",
                     "contains": [
                         "bugtraq id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.carbon_black_analysis_target",
+                    "data_path": "action_result.data.*.added_data.carbon_black_analysis_target",
                     "data_type": "string",
                     "contains": [
                         "carbon black analysis target"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.carbon_black_computer_id",
+                    "data_path": "action_result.data.*.added_data.carbon_black_computer_id",
                     "data_type": "string",
                     "contains": [
                         "carbon black computer id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.carbon_black_connector_id",
+                    "data_path": "action_result.data.*.added_data.carbon_black_connector_id",
                     "data_type": "string",
                     "contains": [
                         "carbon black connector id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.carbon_black_file_id",
+                    "data_path": "action_result.data.*.added_data.carbon_black_file_id",
                     "data_type": "string",
                     "contains": [
                         "carbon black file id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.carbon_black_process_id",
+                    "data_path": "action_result.data.*.added_data.carbon_black_process_id",
                     "data_type": "string",
                     "contains": [
                         "carbon black process id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.carbon_black_query",
+                    "data_path": "action_result.data.*.added_data.carbon_black_query",
                     "data_type": "string",
                     "contains": [
                         "carbon black query"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.carbon_black_query_type",
+                    "data_path": "action_result.data.*.added_data.carbon_black_query_type",
                     "data_type": "string",
                     "contains": [
                         "carbon black query type"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.carbon_black_sensor_id",
+                    "data_path": "action_result.data.*.added_data.carbon_black_sensor_id",
                     "data_type": "string",
                     "contains": [
                         "carbon black sensor id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.carbon_black_watchlist",
+                    "data_path": "action_result.data.*.added_data.carbon_black_watchlist",
                     "data_type": "string",
                     "contains": [
                         "carbon black watchlist"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.check_point_layer",
+                    "data_path": "action_result.data.*.added_data.check_point_layer",
                     "data_type": "string",
                     "contains": [
                         "check point layer"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.check_point_policy",
+                    "data_path": "action_result.data.*.added_data.check_point_policy",
                     "data_type": "string",
                     "contains": [
                         "check point policy"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.cherwell_customer_public_id",
+                    "data_path": "action_result.data.*.added_data.cherwell_customer_public_id",
                     "data_type": "string",
                     "contains": [
                         "cherwell customer public id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.cherwell_customer_rec_id",
+                    "data_path": "action_result.data.*.added_data.cherwell_customer_rec_id",
                     "data_type": "string",
                     "contains": [
                         "cherwell customer rec id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.cherwell_public_id",
+                    "data_path": "action_result.data.*.added_data.cherwell_public_id",
                     "data_type": "string",
                     "contains": [
                         "cherwell public id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.ciscoesa_report_title",
+                    "data_path": "action_result.data.*.added_data.ciscoesa_report_title",
                     "data_type": "string",
                     "contains": [
                         "ciscoesa report title"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.cloudpassagehalo_aws_instance_id",
+                    "data_path": "action_result.data.*.added_data.cloudpassagehalo_aws_instance_id",
                     "data_type": "string",
                     "contains": [
                         "cloudpassagehalo aws instance id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.cloudpassagehalo_cve_number",
+                    "data_path": "action_result.data.*.added_data.cloudpassagehalo_cve_number",
                     "data_type": "string",
                     "contains": [
                         "cloudpassagehalo cve number"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.cloudpassagehalo_package_name",
+                    "data_path": "action_result.data.*.added_data.cloudpassagehalo_package_name",
                     "data_type": "string",
                     "contains": [
                         "cloudpassagehalo package name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.crits_query",
+                    "data_path": "action_result.data.*.added_data.crits_query",
                     "data_type": "string",
                     "contains": [
                         "crits query"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.crits_resource",
+                    "data_path": "action_result.data.*.added_data.crits_resource",
                     "data_type": "string",
                     "contains": [
                         "crits resource"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.crits_resource_id",
+                    "data_path": "action_result.data.*.added_data.crits_resource_id",
                     "data_type": "string",
                     "contains": [
                         "crits resource id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.cuckoo_task_id",
+                    "data_path": "action_result.data.*.added_data.cuckoo_task_id",
                     "data_type": "string",
                     "contains": [
                         "cuckoo task id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.cyphort_event_id",
+                    "data_path": "action_result.data.*.added_data.cyphort_event_id",
                     "data_type": "string",
                     "contains": [
                         "cyphort event id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.deepsight_report_id",
+                    "data_path": "action_result.data.*.added_data.deepsight_report_id",
                     "data_type": "string",
                     "contains": [
                         "deepsight report id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.doc",
+                    "data_path": "action_result.data.*.added_data.doc",
                     "data_type": "string",
                     "contains": [
                         "doc"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.domain",
+                    "data_path": "action_result.data.*.added_data.domain",
                     "data_type": "string",
                     "contains": [
                         "domain"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.elasticsearch_index",
+                    "data_path": "action_result.data.*.added_data.elasticsearch_index",
                     "data_type": "string",
                     "contains": [
                         "elasticsearch index"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.elasticsearch_query",
+                    "data_path": "action_result.data.*.added_data.elasticsearch_query",
                     "data_type": "string",
                     "contains": [
                         "elasticsearch query"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.elasticsearch_type",
+                    "data_path": "action_result.data.*.added_data.elasticsearch_type",
                     "data_type": "string",
                     "contains": [
                         "elasticsearch type"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.email",
+                    "data_path": "action_result.data.*.added_data.email",
                     "data_type": "string",
                     "contains": [
                         "email"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.email_id",
+                    "data_path": "action_result.data.*.added_data.email_id",
                     "data_type": "string",
                     "contains": [
                         "email id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.empire_agent_name",
+                    "data_path": "action_result.data.*.added_data.empire_agent_name",
                     "data_type": "string",
                     "contains": [
                         "empire agent name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.empire_listener_name",
+                    "data_path": "action_result.data.*.added_data.empire_listener_name",
                     "data_type": "string",
                     "contains": [
                         "empire listener name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.empire_listener_type",
+                    "data_path": "action_result.data.*.added_data.empire_listener_type",
                     "data_type": "string",
                     "contains": [
                         "empire listener type"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.empire_module_name",
+                    "data_path": "action_result.data.*.added_data.empire_module_name",
                     "data_type": "string",
                     "contains": [
                         "empire module name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.empire_stager_name",
+                    "data_path": "action_result.data.*.added_data.empire_stager_name",
                     "data_type": "string",
                     "contains": [
                         "empire stager name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.exchange_alias",
+                    "data_path": "action_result.data.*.added_data.exchange_alias",
                     "data_type": "string",
                     "contains": [
                         "exchange alias"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.exchange_distribution_list",
+                    "data_path": "action_result.data.*.added_data.exchange_distribution_list",
                     "data_type": "string",
                     "contains": [
                         "exchange distribution list"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.exchange_email_id",
+                    "data_path": "action_result.data.*.added_data.exchange_email_id",
                     "data_type": "string",
                     "contains": [
                         "exchange email id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.falcon_detection_id",
+                    "data_path": "action_result.data.*.added_data.falcon_detection_id",
                     "data_type": "string",
                     "contains": [
                         "falcon detection id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.falcon_device_id",
+                    "data_path": "action_result.data.*.added_data.falcon_device_id",
                     "data_type": "string",
                     "contains": [
                         "falcon device id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.falcon_process_id",
+                    "data_path": "action_result.data.*.added_data.falcon_process_id",
                     "data_type": "string",
                     "contains": [
                         "falcon process id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.file_name",
+                    "data_path": "action_result.data.*.added_data.file_name",
                     "data_type": "string",
                     "contains": [
                         "file name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.file_path",
+                    "data_path": "action_result.data.*.added_data.file_path",
                     "data_type": "string",
                     "contains": [
                         "file path"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.file_size",
+                    "data_path": "action_result.data.*.added_data.file_size",
                     "data_type": "string",
                     "contains": [
                         "file size"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.fireamp_connector_guid",
+                    "data_path": "action_result.data.*.added_data.fireamp_connector_guid",
                     "data_type": "string",
                     "contains": [
                         "fireamp connector guid"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.firewall_rule_name",
+                    "data_path": "action_result.data.*.added_data.firewall_rule_name",
                     "data_type": "string",
                     "contains": [
                         "firewall rule name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.flash",
+                    "data_path": "action_result.data.*.added_data.flash",
                     "data_type": "string",
                     "contains": [
                         "flash"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.fortigate_policy",
+                    "data_path": "action_result.data.*.added_data.fortigate_policy",
                     "data_type": "string",
                     "contains": [
                         "fortigate policy"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.gmail_email_id",
+                    "data_path": "action_result.data.*.added_data.gmail_email_id",
                     "data_type": "string",
                     "contains": [
                         "gmail email id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.gmail_label",
+                    "data_path": "action_result.data.*.added_data.gmail_label",
                     "data_type": "string",
                     "contains": [
                         "gmail label"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.gpio_mode",
+                    "data_path": "action_result.data.*.added_data.gpio_mode",
                     "data_type": "string",
                     "contains": [
                         "gpio mode"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.gpio_pin",
+                    "data_path": "action_result.data.*.added_data.gpio_pin",
                     "data_type": "string",
                     "contains": [
                         "gpio pin"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.gpio_value",
+                    "data_path": "action_result.data.*.added_data.gpio_value",
                     "data_type": "string",
                     "contains": [
                         "gpio value"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.gsuite_page_token",
+                    "data_path": "action_result.data.*.added_data.gsuite_page_token",
                     "data_type": "string",
                     "contains": [
                         "gsuite page token"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.hash",
+                    "data_path": "action_result.data.*.added_data.hash",
                     "data_type": "string",
                     "contains": [
                         "hash"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.host_name",
+                    "data_path": "action_result.data.*.added_data.host_name",
                     "data_type": "string",
                     "contains": [
                         "host name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.imap_email_id",
+                    "data_path": "action_result.data.*.added_data.imap_email_id",
                     "data_type": "string",
                     "contains": [
                         "imap email id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.infoblox_rpz",
+                    "data_path": "action_result.data.*.added_data.infoblox_rpz",
                     "data_type": "string",
                     "contains": [
                         "infoblox rpz"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.infoblox_view",
+                    "data_path": "action_result.data.*.added_data.infoblox_view",
                     "data_type": "string",
                     "contains": [
                         "infoblox view"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.internet_message_id",
+                    "data_path": "action_result.data.*.added_data.internet_message_id",
                     "data_type": "string",
                     "contains": [
                         "internet message id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.ip",
+                    "data_path": "action_result.data.*.added_data.ip",
                     "data_type": "string",
                     "contains": [
                         "ip"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.ip_list",
+                    "data_path": "action_result.data.*.added_data.ip_list",
                     "data_type": "string",
                     "contains": [
                         "ip list"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.ipv6",
+                    "data_path": "action_result.data.*.added_data.ipv6",
                     "data_type": "string",
                     "contains": [
                         "ipv6"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.isightpartners_report_id",
+                    "data_path": "action_result.data.*.added_data.isightpartners_report_id",
                     "data_type": "string",
                     "contains": [
                         "isightpartners report id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.ivanti_ticket_id",
+                    "data_path": "action_result.data.*.added_data.ivanti_ticket_id",
                     "data_type": "string",
                     "contains": [
                         "ivanti ticket id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.ivanti_user_id",
+                    "data_path": "action_result.data.*.added_data.ivanti_user_id",
                     "data_type": "string",
                     "contains": [
                         "ivanti user id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.jar",
+                    "data_path": "action_result.data.*.added_data.jar",
                     "data_type": "string",
                     "contains": [
                         "jar"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.jira_project_key",
+                    "data_path": "action_result.data.*.added_data.jira_project_key",
                     "data_type": "string",
                     "contains": [
                         "jira project key"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.jira_ticket_key",
+                    "data_path": "action_result.data.*.added_data.jira_ticket_key",
                     "data_type": "string",
                     "contains": [
                         "jira ticket key"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.jira_ticket_status",
+                    "data_path": "action_result.data.*.added_data.jira_ticket_status",
                     "data_type": "string",
                     "contains": [
                         "jira ticket status"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.joesandbox_task_id",
+                    "data_path": "action_result.data.*.added_data.joesandbox_task_id",
                     "data_type": "string",
                     "contains": [
                         "joesandbox task id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.kafka_topic",
+                    "data_path": "action_result.data.*.added_data.kafka_topic",
                     "data_type": "string",
                     "contains": [
                         "kafka topic"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.ktc_user_id",
+                    "data_path": "action_result.data.*.added_data.ktc_user_id",
                     "data_type": "string",
                     "contains": [
                         "ktc user id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.language",
+                    "data_path": "action_result.data.*.added_data.language",
                     "data_type": "string",
                     "contains": [
                         "language"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.lastline_task_id",
+                    "data_path": "action_result.data.*.added_data.lastline_task_id",
                     "data_type": "string",
                     "contains": [
                         "lastline task id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.logrhythm_alarm_id",
+                    "data_path": "action_result.data.*.added_data.logrhythm_alarm_id",
                     "data_type": "string",
                     "contains": [
                         "logrhythm alarm id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.logrhythm_list_id",
+                    "data_path": "action_result.data.*.added_data.logrhythm_list_id",
                     "data_type": "string",
                     "contains": [
                         "logrhythm list id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.mac_address",
+                    "data_path": "action_result.data.*.added_data.mac_address",
                     "data_type": "string",
                     "contains": [
                         "mac address"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.mail_folder",
+                    "data_path": "action_result.data.*.added_data.mail_folder",
                     "data_type": "string",
                     "contains": [
                         "mail folder"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.mail_folder_path",
+                    "data_path": "action_result.data.*.added_data.mail_folder_path",
                     "data_type": "string",
                     "contains": [
                         "mail folder path"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.malwr_task_id",
+                    "data_path": "action_result.data.*.added_data.malwr_task_id",
                     "data_type": "string",
                     "contains": [
                         "malwr task id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.mas_task_id",
+                    "data_path": "action_result.data.*.added_data.mas_task_id",
                     "data_type": "string",
                     "contains": [
                         "mas task id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.md5",
+                    "data_path": "action_result.data.*.added_data.md5",
                     "data_type": "string",
                     "contains": [
                         "md5"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.mfeeop_tag",
+                    "data_path": "action_result.data.*.added_data.mfeeop_tag",
                     "data_type": "string",
                     "contains": [
                         "mfeeop tag"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.misp_event_id",
+                    "data_path": "action_result.data.*.added_data.misp_event_id",
                     "data_type": "string",
                     "contains": [
                         "misp event id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.mobileiron_device_uuid",
+                    "data_path": "action_result.data.*.added_data.mobileiron_device_uuid",
                     "data_type": "string",
                     "contains": [
                         "mobileiron device uuid"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.mongodb_collection",
+                    "data_path": "action_result.data.*.added_data.mongodb_collection",
                     "data_type": "string",
                     "contains": [
                         "mongodb collection"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.mssql_table_name",
+                    "data_path": "action_result.data.*.added_data.mssql_table_name",
                     "data_type": "string",
                     "contains": [
                         "mssql table name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.mssql_table_schema",
+                    "data_path": "action_result.data.*.added_data.mssql_table_schema",
                     "data_type": "string",
                     "contains": [
                         "mssql table schema"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.netwitness_session_ids",
+                    "data_path": "action_result.data.*.added_data.netwitness_session_ids",
                     "data_type": "string",
                     "contains": [
                         "netwitness session ids"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.network_application",
+                    "data_path": "action_result.data.*.added_data.network_application",
                     "data_type": "string",
                     "contains": [
                         "network application"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.numeric",
+                    "data_path": "action_result.data.*.added_data.numeric",
                     "data_type": "numeric"
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.office_365_email_id",
+                    "data_path": "action_result.data.*.added_data.office_365_email_id",
                     "data_type": "string",
                     "contains": [
                         "office 365 email id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.page_token",
+                    "data_path": "action_result.data.*.added_data.page_token",
                     "data_type": "string",
                     "contains": [
                         "page token"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.pagerduty_team",
+                    "data_path": "action_result.data.*.added_data.pagerduty_team",
                     "data_type": "string",
                     "contains": [
                         "pagerduty team"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.pdf",
+                    "data_path": "action_result.data.*.added_data.pdf",
                     "data_type": "string",
                     "contains": [
                         "pdf"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.pe_file",
+                    "data_path": "action_result.data.*.added_data.pe_file",
                     "data_type": "string",
                     "contains": [
                         "pe file"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.phantom_container_id",
+                    "data_path": "action_result.data.*.added_data.phantom_container_id",
                     "data_type": "string",
                     "contains": [
                         "phantom container id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.phishme_threat_id",
+                    "data_path": "action_result.data.*.added_data.phishme_threat_id",
                     "data_type": "string",
                     "contains": [
                         "phishme threat id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.phone",
+                    "data_path": "action_result.data.*.added_data.phone",
                     "data_type": "string",
                     "contains": [
                         "phone"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.phone_number",
+                    "data_path": "action_result.data.*.added_data.phone_number",
                     "data_type": "string",
                     "contains": [
                         "phone number"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.pid",
+                    "data_path": "action_result.data.*.added_data.pid",
                     "data_type": "string",
                     "contains": [
                         "pid"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.port",
+                    "data_path": "action_result.data.*.added_data.port",
                     "data_type": "string",
                     "contains": [
                         "port"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.postgres_table_name",
+                    "data_path": "action_result.data.*.added_data.postgres_table_name",
                     "data_type": "string",
                     "contains": [
                         "postgres table name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.ppt",
+                    "data_path": "action_result.data.*.added_data.ppt",
                     "data_type": "string",
                     "contains": [
                         "ppt"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.process_name",
+                    "data_path": "action_result.data.*.added_data.process_name",
                     "data_type": "string",
                     "contains": [
                         "process name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.protectwise_event_id",
+                    "data_path": "action_result.data.*.added_data.protectwise_event_id",
                     "data_type": "string",
                     "contains": [
                         "protectwise event id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.protectwise_observation_id",
+                    "data_path": "action_result.data.*.added_data.protectwise_observation_id",
                     "data_type": "string",
                     "contains": [
                         "protectwise observation id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.protectwise_sensor_id",
+                    "data_path": "action_result.data.*.added_data.protectwise_sensor_id",
                     "data_type": "string",
                     "contains": [
                         "protectwise sensor id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.protocol",
+                    "data_path": "action_result.data.*.added_data.protocol",
                     "data_type": "string",
                     "contains": [
                         "protocol"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.qradar_ariel_query",
+                    "data_path": "action_result.data.*.added_data.qradar_ariel_query",
                     "data_type": "string",
                     "contains": [
                         "qradar ariel query"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.qradar_offense_id",
+                    "data_path": "action_result.data.*.added_data.qradar_offense_id",
                     "data_type": "string",
                     "contains": [
                         "qradar offense id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.remedyforce_incident_id",
+                    "data_path": "action_result.data.*.added_data.remedyforce_incident_id",
                     "data_type": "string",
                     "contains": [
                         "remedyforce incident id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.rsa_alert_id",
+                    "data_path": "action_result.data.*.added_data.rsa_alert_id",
                     "data_type": "string",
                     "contains": [
                         "rsa alert id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.rsa_incident_id",
+                    "data_path": "action_result.data.*.added_data.rsa_incident_id",
                     "data_type": "string",
                     "contains": [
                         "rsa incident id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.rsa_sa_device",
+                    "data_path": "action_result.data.*.added_data.rsa_sa_device",
                     "data_type": "string",
                     "contains": [
                         "rsa sa device"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.rt_queue",
+                    "data_path": "action_result.data.*.added_data.rt_queue",
                     "data_type": "string",
                     "contains": [
                         "rt queue"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.rt_ticket_id",
+                    "data_path": "action_result.data.*.added_data.rt_ticket_id",
                     "data_type": "string",
                     "contains": [
                         "rt ticket id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.salesforce_listview_name",
+                    "data_path": "action_result.data.*.added_data.salesforce_listview_name",
                     "data_type": "string",
                     "contains": [
                         "salesforce listview name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.salesforce_object_id",
+                    "data_path": "action_result.data.*.added_data.salesforce_object_id",
                     "data_type": "string",
                     "contains": [
                         "salesforce object id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.salesforce_object_name",
+                    "data_path": "action_result.data.*.added_data.salesforce_object_name",
                     "data_type": "string",
                     "contains": [
                         "salesforce object name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.sccm_device_group_name",
+                    "data_path": "action_result.data.*.added_data.sccm_device_group_name",
                     "data_type": "string",
                     "contains": [
                         "sccm device group name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.sccm_software_patch_name",
+                    "data_path": "action_result.data.*.added_data.sccm_software_patch_name",
                     "data_type": "string",
                     "contains": [
                         "sccm software patch name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.search_id",
+                    "data_path": "action_result.data.*.added_data.search_id",
                     "data_type": "string",
                     "contains": [
                         "search id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.securitycenter_scan_policy_id",
+                    "data_path": "action_result.data.*.added_data.securitycenter_scan_policy_id",
                     "data_type": "string",
                     "contains": [
                         "securitycenter scan policy id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.servicenow_table",
+                    "data_path": "action_result.data.*.added_data.servicenow_table",
                     "data_type": "string",
                     "contains": [
                         "servicenow table"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.servicenow_ticket_id",
+                    "data_path": "action_result.data.*.added_data.servicenow_ticket_id",
                     "data_type": "string",
                     "contains": [
                         "servicenow ticket id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.sha1",
+                    "data_path": "action_result.data.*.added_data.sha1",
                     "data_type": "string",
                     "contains": [
                         "sha1"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.sha256",
+                    "data_path": "action_result.data.*.added_data.sha256",
                     "data_type": "string",
                     "contains": [
                         "sha256"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.sha512",
+                    "data_path": "action_result.data.*.added_data.sha512",
                     "data_type": "string",
                     "contains": [
                         "sha512"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.slack_destination",
+                    "data_path": "action_result.data.*.added_data.slack_destination",
                     "data_type": "string",
                     "contains": [
                         "slack destination"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.slack_question_id",
+                    "data_path": "action_result.data.*.added_data.slack_question_id",
                     "data_type": "string",
                     "contains": [
                         "slack question id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.slack_user",
+                    "data_path": "action_result.data.*.added_data.slack_user",
                     "data_type": "string",
                     "contains": [
                         "slack user"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.snort_id",
+                    "data_path": "action_result.data.*.added_data.snort_id",
                     "data_type": "string",
                     "contains": [
                         "snort id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.socialnet_entity_id",
+                    "data_path": "action_result.data.*.added_data.socialnet_entity_id",
                     "data_type": "string",
                     "contains": [
                         "socialnet entity id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.sourcefire_vuln_id",
+                    "data_path": "action_result.data.*.added_data.sourcefire_vuln_id",
                     "data_type": "string",
                     "contains": [
                         "sourcefire vuln id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.splunk_notable_event_id",
+                    "data_path": "action_result.data.*.added_data.splunk_notable_event_id",
                     "data_type": "string",
                     "contains": [
                         "splunk notable event id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.splunk_query",
+                    "data_path": "action_result.data.*.added_data.splunk_query",
                     "data_type": "string",
                     "contains": [
                         "splunk query"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.sql_query",
+                    "data_path": "action_result.data.*.added_data.sql_query",
                     "data_type": "string",
                     "contains": [
                         "sql query"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.sqlite_table_name",
+                    "data_path": "action_result.data.*.added_data.sqlite_table_name",
                     "data_type": "string",
                     "contains": [
                         "sqlite table name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.srp_guid",
+                    "data_path": "action_result.data.*.added_data.srp_guid",
                     "data_type": "string",
                     "contains": [
                         "srp guid"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.ssid",
+                    "data_path": "action_result.data.*.added_data.ssid",
                     "data_type": "string",
                     "contains": [
                         "ssid"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.string",
+                    "data_path": "action_result.data.*.added_data.string",
                     "data_type": "string"
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.sumo_logic_query",
+                    "data_path": "action_result.data.*.added_data.sumo_logic_query",
                     "data_type": "string",
                     "contains": [
                         "sumo logic query"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.symantec_command_id",
+                    "data_path": "action_result.data.*.added_data.symantec_command_id",
                     "data_type": "string",
                     "contains": [
                         "symantec command id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.symantec_device_id",
+                    "data_path": "action_result.data.*.added_data.symantec_device_id",
                     "data_type": "string",
                     "contains": [
                         "symantec device id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.symantec_group_id",
+                    "data_path": "action_result.data.*.added_data.symantec_group_id",
                     "data_type": "string",
                     "contains": [
                         "symantec group id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.symantec_scan_type",
+                    "data_path": "action_result.data.*.added_data.symantec_scan_type",
                     "data_type": "string",
                     "contains": [
                         "symantec scan type"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.tanium_parsed_question",
+                    "data_path": "action_result.data.*.added_data.tanium_parsed_question",
                     "data_type": "string",
                     "contains": [
                         "tanium parsed question"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.tanium_question",
+                    "data_path": "action_result.data.*.added_data.tanium_question",
                     "data_type": "string",
                     "contains": [
                         "tanium question"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.threatgrid_task_id",
+                    "data_path": "action_result.data.*.added_data.threatgrid_task_id",
                     "data_type": "string",
                     "contains": [
                         "threatgrid task id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.trustar_bitcoin_address",
+                    "data_path": "action_result.data.*.added_data.trustar_bitcoin_address",
                     "data_type": "string",
                     "contains": [
                         "trustar bitcoin address"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.trustar_cve_number",
+                    "data_path": "action_result.data.*.added_data.trustar_cve_number",
                     "data_type": "string",
                     "contains": [
                         "trustar cve number"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.trustar_malware",
+                    "data_path": "action_result.data.*.added_data.trustar_malware",
                     "data_type": "string",
                     "contains": [
                         "trustar malware"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.trustar_registry_key",
+                    "data_path": "action_result.data.*.added_data.trustar_registry_key",
                     "data_type": "string",
                     "contains": [
                         "trustar registry key"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.trustar_report_id",
+                    "data_path": "action_result.data.*.added_data.trustar_report_id",
                     "data_type": "string",
                     "contains": [
                         "trustar report id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.trustar_tracking_id",
+                    "data_path": "action_result.data.*.added_data.trustar_tracking_id",
                     "data_type": "string",
                     "contains": [
                         "trustar tracking id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.url",
+                    "data_path": "action_result.data.*.added_data.url",
                     "data_type": "string",
                     "contains": [
                         "url"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.url_list",
+                    "data_path": "action_result.data.*.added_data.url_list",
                     "data_type": "string",
                     "contains": [
                         "url list"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.urlscan_submission_id",
+                    "data_path": "action_result.data.*.added_data.urlscan_submission_id",
                     "data_type": "string",
                     "contains": [
                         "urlscan submission id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.user_name",
+                    "data_path": "action_result.data.*.added_data.user_name",
                     "data_type": "string",
                     "contains": [
                         "user name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.vault_id",
+                    "data_path": "action_result.data.*.added_data.vault_id",
                     "data_type": "string",
                     "contains": [
                         "vault id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.virustotal_scan_id",
+                    "data_path": "action_result.data.*.added_data.virustotal_scan_id",
                     "data_type": "string",
                     "contains": [
                         "virustotal scan id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.vm",
+                    "data_path": "action_result.data.*.added_data.vm",
                     "data_type": "string",
                     "contains": [
                         "vm"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.watson_translation_model",
+                    "data_path": "action_result.data.*.added_data.watson_translation_model",
                     "data_type": "string",
                     "contains": [
                         "watson translation model"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.wildfire_task_id",
+                    "data_path": "action_result.data.*.added_data.wildfire_task_id",
                     "data_type": "string",
                     "contains": [
                         "wildfire task id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.windows_applocker_policy_id",
+                    "data_path": "action_result.data.*.added_data.windows_applocker_policy_id",
                     "data_type": "string",
                     "contains": [
                         "windows applocker policy id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.windows_firewall_rule_name",
+                    "data_path": "action_result.data.*.added_data.windows_firewall_rule_name",
                     "data_type": "string",
                     "contains": [
                         "windows firewall rule name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.windows_session_id",
+                    "data_path": "action_result.data.*.added_data.windows_session_id",
                     "data_type": "string",
                     "contains": [
                         "windows session id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.winrm_command_id",
+                    "data_path": "action_result.data.*.added_data.winrm_command_id",
                     "data_type": "string",
                     "contains": [
                         "winrm command id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.winrm_shell_id",
+                    "data_path": "action_result.data.*.added_data.winrm_shell_id",
                     "data_type": "string",
                     "contains": [
                         "winrm shell id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.xls",
+                    "data_path": "action_result.data.*.added_data.xls",
                     "data_type": "string",
                     "contains": [
                         "xls"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.xmatters_event_id",
+                    "data_path": "action_result.data.*.added_data.xmatters_event_id",
                     "data_type": "string",
                     "contains": [
                         "xmatters event id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.xmatters_form_uuid",
+                    "data_path": "action_result.data.*.added_data.xmatters_form_uuid",
                     "data_type": "string",
                     "contains": [
                         "xmatters form uuid"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.xmatters_target_name",
+                    "data_path": "action_result.data.*.added_data.xmatters_target_name",
                     "data_type": "string",
                     "contains": [
                         "xmatters target name"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.xmatters_user_id",
+                    "data_path": "action_result.data.*.added_data.xmatters_user_id",
                     "data_type": "string",
                     "contains": [
                         "xmatters user id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.zendesk_ticket_id",
+                    "data_path": "action_result.data.*.added_data.zendesk_ticket_id",
                     "data_type": "string",
                     "contains": [
                         "zendesk ticket id"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.added_data.*.zscaler_url_category",
+                    "data_path": "action_result.data.*.added_data.zscaler_url_category",
                     "data_type": "string",
                     "contains": [
                         "zscaler url category"

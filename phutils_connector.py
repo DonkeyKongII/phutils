@@ -6,6 +6,7 @@
 from phantom.action_result import ActionResult
 import phantom.app as phantom
 from phantom.base_connector import BaseConnector
+import phantom.utils as ph_utils
 import requests
 from requests.auth import HTTPBasicAuth
 import json
@@ -15,6 +16,7 @@ from datetime import timedelta
 import time
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
+import hashlib
 
 class phutilities_connector(BaseConnector):
     
@@ -46,7 +48,9 @@ class phutilities_connector(BaseConnector):
                 'add_to_datapath': self._add_to_datapath,
                 'format_string': self._format_string,
                 'modify_date': self._modify_date,
-                'replace_partial_string': self._replace_partial_string
+                'replace_partial_string': self._replace_partial_string,
+                'multi_collect': self._multi_collect,
+                'hash text': self._hash_text
             #    'format string': self._format_string,
             #    'do nothing': self._do_nothing
             }
@@ -75,6 +79,73 @@ class phutilities_connector(BaseConnector):
                     'Successfully connected to Phantom REST API endpoint /rest/cef_metadata.'
                 )
             )
+
+    def _hash_text(self, param, action_id):
+        string_to_hash = param["text"]
+        
+        action_result = self.add_action_result(ActionResult(dict(param)))
+
+        try:
+            md5 = hashlib.md5(string_to_hash).hexdigest()
+            sha1 = hashlib.sha1(string_to_hash).hexdigest()
+            sha256 = hashlib.sha265(string_to_hash).hexdigest()
+        except Exception as err:
+            return action_result.set_status(phantom.APP_ERROR, 'Error creating hash. Details - ' + err.message)
+
+        action_result.add_data({
+            'md5': md5,
+            'sha1': sha1,
+            'sha256': sha256
+        })
+
+        return action_result.set_status(phantom.APP_SUCCESS, 'Hash successfully created')
+
+    def _multi_collect(self, param, action_id):
+        config = self.get_config()
+
+        action_result = self.add_action_result(ActionResult(dict(param)))
+
+        container_id = param['container_id']
+        data_paths = param['data_paths'].split(',')
+        field_name = param['field_name']
+
+        if len(data_paths) < 2:
+            return phantom.set_status(phantom.APP_ERROR, 'Do not use multi_collect to collect from only one datapath.')
+
+        collected_data = []
+
+        artifacts = self._send_request(config, '/rest/artifact?page_size=0&_filter_container_id=' + str(container_id), 'get')
+        artifacts = [artifacts['data']]
+
+        for data_path in data_paths:
+            data_path = data_path.split(':')
+            if len(data_path) != 2:
+                return phantom.set_status(phantom.APP_ERROR, 'data_path incorrectly formatted - should look like artifact:*.cef.field_name. Remember that multi collect only works on artifacts, not on filter output or action_results.')
+            if 'action_result' in data_path[0]:
+                return phantom.set_status(phantom.APP_ERROR, '"multi collect" only works with artifact data, action_results/filter results cannot be collected. Suggest multi collecting first, and the running action and/or filter.')
+            else:
+                artifact_id = '*.id'
+            
+            paths = [data_path[1]]
+            self.debug_print('chihuahua: ' + str(paths))
+            paths.append(artifact_id)
+            
+            collected_data = collected_data + ph_utils.extract_data_paths(artifacts, paths)
+        
+        self.debug_print('chinchilla: ' + str(collected_data))
+
+        if param.get('de_dupe'):
+            unique_list = set([val[0] for val in collected_data if val[0]])
+            collected_data = [{'added_data': {field_name: val, 'artifact_ids': [{'artifact_id': item[1]} for item in collected_data if item[0] == val]}} for val in unique_list]
+        else:
+            collected_data = [{'added_data': {field_name: val[0], 'artifact_ids': [{'artifact_id': val[1]}]}} for val in collected_data if val[0]]
+
+        for data in collected_data:
+            action_result.add_data(data)
+
+        #action_result.add_data({'added_data': collected_data})
+
+        return action_result.set_status(phantom.APP_SUCCESS, 'Collected data')
 
     def _add_to_datapath(self, param, action_id):
         config = self.get_config()
@@ -130,14 +201,15 @@ class phutilities_connector(BaseConnector):
                 ', '.join(invalid_contains) + ' not valid for "contains." Use '
                 + 'api endoint /rest/cef_metadata to see complete valid list.'
             ) 
-
-        results_data = {'added_data': []}
+        
+        item_count = 0
 
         if data_list:
             field_name = contains[0].lower().replace(' ','_') if contains else data_type[0].lower().replace(' ', '_')
 
             for datum in data_list:
-                results_data['added_data'].append({field_name: datum})
+                action_result.add_data({'added_data': {field_name: datum}})
+                item_count += 1
 
         else:
             for dict_item in data_dict:
@@ -146,11 +218,11 @@ class phutilities_connector(BaseConnector):
                     if dict_item.get('contains') 
                     else dict_item['data_type'].lower().replace(' ', '_')
                 )
-                results_data['added_data'].append({field_name: dict_item['data']})
+                action_result.add_data({'added_data': {field_name: dict_item['data']}})
+                item_count += 1
 
         item_count = len(data_dict) if data_dict else len(data_list)
 
-        action_result.add_data(results_data)
         action_result.update_summary({'items_added': item_count})
 
         return(action_result.set_status(phantom.APP_SUCCESS))
@@ -172,10 +244,12 @@ class phutilities_connector(BaseConnector):
         if len(string_to_format) < 1:
             return action_result.set_status(
                 phantom.APP_ERROR,
-                'Either no input string was provided or the regex parttern did not match as expected. Details - ' + err.message 
+                'Either no input string was provided or the regex pattern did not match as expected. Details - ' + err.message 
             ) 
         elif string_regex:
             string_to_format = string_to_format[0]
+            if type(string_to_format) != 'tuple':
+                string_to_format = (string_to_format, '')
 
         try:
             output_string = output_string.format(*string_to_format)
@@ -228,7 +302,7 @@ class phutilities_connector(BaseConnector):
             'years': 0
         }
 
-        if mod_units not in (td_units.keys()):
+        if mod_units not in td_units.keys() and mod_value:
             return action_result.set_status(
                 phantom.APP_ERROR,
                 (
@@ -254,12 +328,16 @@ class phutilities_connector(BaseConnector):
                     try:
                         parsed_date = datetime.fromtimestamp(int(date_value))
                     except Exception as err2:
-                        return action_result.set_status(
-                            phantom.APP_ERROR,
-                            (
-                                'Unable to parse date. Details - Parse message: ' + err.message
-                                + '\n\nfromTimestamp Attempt: ' + err2.message
-                            )
+                        try:
+                            parsed_date = datetime.fromtimestamp(long(date_value)/1000.0)
+                        except Exception as err3:
+                            return action_result.set_status(
+                                phantom.APP_ERROR,
+                                (
+                                    'Unable to parse date. Details - Parse message: ' + err.message
+                                    + '\n\nfromTimestamp Attempt: ' + err2.message
+                                    + '\n\nepoch Attempt: ' + err3.message
+                                )
                     )
         else:
             parsed_date = datetime.now()
