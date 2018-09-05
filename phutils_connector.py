@@ -50,7 +50,7 @@ class phutilities_connector(BaseConnector):
                 'modify_date': self._modify_date,
                 'replace_partial_string': self._replace_partial_string,
                 'multi_collect': self._multi_collect,
-                'hash text': self._hash_text
+                'hash_text': self._hash_text
             #    'format string': self._format_string,
             #    'do nothing': self._do_nothing
             }
@@ -88,7 +88,7 @@ class phutilities_connector(BaseConnector):
         try:
             md5 = hashlib.md5(string_to_hash).hexdigest()
             sha1 = hashlib.sha1(string_to_hash).hexdigest()
-            sha256 = hashlib.sha265(string_to_hash).hexdigest()
+            sha256 = hashlib.sha256(string_to_hash).hexdigest()
         except Exception as err:
             return action_result.set_status(phantom.APP_ERROR, 'Error creating hash. Details - ' + err.message)
 
