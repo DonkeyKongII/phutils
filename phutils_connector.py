@@ -232,9 +232,15 @@ class phutilities_connector(BaseConnector):
         
         string_to_format = param['string_to_format']
         string_regex = param.get('regex')
+        ignore_case = (param.get('ignore_case') or True)
+
+        string_found = True
 
         if string_regex:
-            string_regex = re.compile(string_regex)
+            if ignore_case:
+                string_regex = re.compile(string_regex, re.IGNORECASE)
+            else:
+                string_regex = re.compile(string_regex)
             string_to_format = string_regex.findall(string_to_format)
         else:
             string_to_format = [string_to_format]
@@ -242,24 +248,22 @@ class phutilities_connector(BaseConnector):
         output_string = param.get('output_string') 
 
         if len(string_to_format) < 1:
-            return action_result.set_status(
-                phantom.APP_ERROR,
-                'Either no input string was provided or the regex pattern did not match as expected. Details - ' + err.message 
-            ) 
+            # regex was not found
+            string_found = False 
         elif string_regex:
             string_to_format = string_to_format[0]
             if type(string_to_format) != 'tuple':
                 string_to_format = (string_to_format, '')
 
-        try:
-            output_string = output_string.format(*string_to_format)
-        except Exception as err:
-            return action_result.set_status(
-                phantom.APP_ERROR,
-                'Unable to format string. Likely the string placeholder is out of range. Details - ' + err.message 
-            ) 
+        if string_found:
+            try:
+                output_string = output_string.format(*string_to_format)
+            except Exception as err:
+                return(action_result.set_status(phantom.APP_SUCCESS, 'Pattern was found, but index in ouput_string does not exist. Details - '  + err.message))
+        else:
+            output_string = None
 
-        action_result.add_data({'formatted_string': output_string})
+        action_result.add_data({'formatted_string': output_string, 'string_found': string_found})
 
         return(action_result.set_status(phantom.APP_SUCCESS, 'Successfully modified string.'))
 
