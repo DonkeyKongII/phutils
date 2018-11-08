@@ -68,16 +68,12 @@ class phutilities_connector(BaseConnector):
         except Exception as err:
             return self.set_status_save_progress(
                 phantom.APP_ERROR,
-                (
-                    'Could not connect to Phantom REST API endpoint. Details - ' + err.message
-                )
+                'Could not connect to Phantom REST API endpoint. Details - ' + err.message
             )
         else:
             return self.set_status_save_progress(
                 phantom.APP_SUCCESS,
-                (
-                    'Successfully connected to Phantom REST API endpoint /rest/cef_metadata.'
-                )
+                'Successfully connected to Phantom REST API endpoint /rest/cef_metadata.'
             )
 
     def _hash_text(self, param, action_id):
@@ -183,13 +179,16 @@ class phutilities_connector(BaseConnector):
             try:
                 data_list = json.loads(data_list)
             except Exception:
-                return action_result.set_status(
-                    phantom.APP_ERROR,
-                    'Unable to conver data_list to list.'
-                )
+                try:
+                    data_list = re.sub(r'(^\[)|(\]$)', '', data_list).replace('", ','",').split('","')
+                except Exception:
+                    return action_result.set_status(
+                        phantom.APP_ERROR,
+                        'Unable to convert data_list to list.'
+                    )
             contains = [contains] if contains else []
             data_type = [data_type]
-        
+            
         response = self._send_request(config, '/rest/cef_metadata', 'get')
         contains_master_list = response['all_contains']
 
@@ -205,18 +204,16 @@ class phutilities_connector(BaseConnector):
         item_count = 0
 
         if data_list:
-            field_name = contains[0].lower().replace(' ','_') if contains else data_type[0].lower().replace(' ', '_')
+            field_name = param.get('field_name') or 'added_field'
 
             for datum in data_list:
-                action_result.add_data({'added_data': {field_name: datum}})
+                action_result.add_data({'added_data': {field_name: re.sub(r'(^")|("$)', '', datum)}})
                 item_count += 1
 
         else:
             for dict_item in data_dict:
                 field_name = (
-                    dict_item['contains'].lower().replace(' ', '_') 
-                    if dict_item.get('contains') 
-                    else dict_item['data_type'].lower().replace(' ', '_')
+                    dict_item.get('field_name') or 'added_field'
                 )
                 action_result.add_data({'added_data': {field_name: dict_item['data']}})
                 item_count += 1
