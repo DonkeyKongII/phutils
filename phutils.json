@@ -48,6 +48,10 @@
             {
                 "module": "python-dateutil",
                 "input_file": "wheels/python_dateutil-2.7.3-py2.py3-none-any.whl"
+            },
+            {
+                "module": "py-expression-eval",
+                "input_file": "wheels/py_expression_eval-0.3.5-py2.py3-none-any.whl"
             }
         ]
     },
@@ -132,6 +136,179 @@
                     "data_type": "string",
                     "column_name": "Message",
                     "column_order": 2
+                }
+            ],
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "modify number",
+            "description": "Performs mathematic operations against numbers",
+            "verbose": "The number parameter is the number on which the mathematic operation should be performed. The expression is the express to evaluate - use 'format string' style syntax. Example: number = 4; expression = '{0} * 4'; result would be 16 (4 * 4 = 16). For a complete list of supported operations please refer to py-expression-eval documentation.",
+            "type": "generic",
+            "identifier": "modify_number",
+            "read_only": true,
+            "parameters": {
+                "number": {
+                    "description": "Number to modify",
+                    "data_type": "string",
+                    "required": false,
+                    "primary": true,
+                    "order": 0
+                },
+                "expression": {
+                    "description": "Expression to evaluate",
+                    "data_type": "string",
+                    "required": true,
+                    "order": 1
+                },
+                "default_number": {
+                    "description": "Default number",
+                    "data_type": "string",
+                    "required": false,
+                    "order": 2
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "column_name": "Status",
+                    "column_order": 1
+                },
+                {
+                    "data_path": "action_result.parameter.number",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.expression",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.result",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.result",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.expression",
+                    "data_type": "string"
+                }
+            ],
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "split string",
+            "description": "Splits a string based on delimiter and text qualifier (optional) in list of dictionaries.",
+            "type": "generic",
+            "identifier": "split_string",
+            "read_only": true,
+            "parameters": {
+                "string_to_split": {
+                    "description": "String to split",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": true,
+                    "order": 0
+                },
+                "delimiter": {
+                    "description": "Delimiter",
+                    "data_type": "string",
+                    "required": true,
+                    "order": 1
+                },
+                "qualifier": {
+                    "description": "Text qualifier",
+                    "data_type": "string",
+                    "required": false,
+                    "order": 2
+                },
+                "field_name": {
+                    "description": "Output field name",
+                    "data_type": "string",
+                    "required": true,
+                    "order": 3
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "column_name": "Status",
+                    "column_order": 1
+                },
+                {
+                    "data_path": "action_result.parameter.string_to_split",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.delimiter",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.qualifier",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.field_name",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.item_count",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.result_dict",
+                    "data_type": "string"
+                }
+            ],
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "convert list to dict",
+            "description": "Converts a list to a list of of dictionaries objects",
+            "verbose": "List can be submitted as a python list or a string representation of a list",
+            "type": "generic",
+            "identifier": "convert_to_dict",
+            "read_only": true,
+            "parameters": {
+                "list": {
+                    "description": "String to split",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": true,
+                    "order": 0
+                },
+                "field_name": {
+                    "description": "Output field name",
+                    "data_type": "string",
+                    "required": true,
+                    "order": 1
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "column_name": "Status",
+                    "column_order": 1
+                },
+                {
+                    "data_path": "action_result.parameter.list",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.field_name",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.item_count",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.result_dict",
+                    "data_type": "string"
                 }
             ],
             "versions": "EQ(*)"
