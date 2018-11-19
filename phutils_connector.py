@@ -188,7 +188,15 @@ class phutilities_connector(BaseConnector):
         )
 
     def _custom_split(self, param):
-        delimiter = param['delimiter']
+        delimiter = param['delimiter'].replace(
+            '\\n', '\n'
+        ).replace(
+            '\\r', '\r'
+        ).replace(
+            '[', ''
+        ).replace(
+            ']', ''
+        )
         qualifier = param.get('qualifier', '')
         string_to_split = param['string_to_split']
 
@@ -208,7 +216,7 @@ class phutilities_connector(BaseConnector):
         return list_data
 
     def _split(self, param, action_id):
-        key_name = param['field_name']
+        key_name = param['field_name'].split(',')
         result_dict = {'result_dict': []}
 
         action_result = self.add_action_result(ActionResult(dict(param)))
@@ -221,12 +229,24 @@ class phutilities_connector(BaseConnector):
                 'Unable to split string. Error details - ' + err.message
             )
 
-        for data_val in list_data:
-            result_dict['result_dict'].append({key_name: data_val})
+        multi_label_dict = {}
 
-        action_result.update_summary(
-            {'item_count': len(result_dict['result_dict'])}
-        )
+        for i, data_val in enumerate(list_data):
+            if len(key_name) > 0 and len(key_name) >= len(list_data):
+                multi_label_dict[key_name[i]] = data_val
+            else:
+                result_dict['result_dict'].append({key_name[0]: data_val})
+
+        if len(multi_label_dict.keys()) > 0:
+            result_dict['result_dict'].append(multi_label_dict)
+            action_result.update_summary(
+                {'item_count': len(multi_label_dict.keys())}
+            )
+        else:
+            action_result.update_summary(
+                {'item_count': len(result_dict['result_dict'])}
+            )
+
         action_result.add_data(result_dict)
 
         return action_result.set_status(
@@ -515,11 +535,11 @@ class phutilities_connector(BaseConnector):
         action_result = self.add_action_result(ActionResult(dict(param)))
 
         target_string = param['target_string']
-        find_str = param['find']
+        find_str = param['find'].replace('\\n', '\n').replace('\\r', '\r')
         replace_str = param.get('replace', '')
-        ignore_case = param['ignore_case']
+        ignore_case = param.get('ignore_case')
 
-        case_ignore = None
+        case_ignore = re.LOCALE
 
         if(ignore_case):
             case_ignore = re.IGNORECASE
