@@ -1,7 +1,7 @@
 {
     "appid": "f006b969-7253-423f-85df-db0f708826b7",
     "name": "Phantom Utilities",
-    "description": "Common utility actions for phantom playbook use.",
+    "description": "Common utility actions for phantom playbook use",
     "publisher": "Phantom",
     "type": "Generic",
     "main_module": "phutils_connector.pyc",
@@ -58,7 +58,7 @@
     "actions": [
         {
             "action": "test connectivity",
-            "description": "Tests connectivity to the Phantom REST API.",
+            "description": "Tests connectivity to the Phantom REST API",
             "type": "test",
             "identifier": "test_connectivity",
             "read_only": true,
@@ -122,7 +122,7 @@
         },
         {
             "action": "format string",
-            "description": "Formats input data.",
+            "description": "Formats input data",
             "verbose": "Can be used with or without regex. If no regex, then just used to add text around existing string (i.e. create a query that uses a parameter from the existing datapath). If regex, findall is leveraged to find all specified groups. In either case, string format notation is used for modification (use {0} {1} {2}... etc for creating the new string).<br /><br />If no regex and the output_string is 'I love {1}', and the string_to_format is 'Phantom', the resulting string is 'I love Phantom'.",
             "type": "generic",
             "identifier": "format_string",
@@ -254,7 +254,7 @@
         },
         {
             "action": "split string",
-            "description": "Splits a string based on delimiter and text qualifier (optional) in list of dictionaries.",
+            "description": "Splits a string based on delimiter and text qualifier (optional) in list of dictionaries",
             "type": "generic",
             "identifier": "split_string",
             "read_only": true,
@@ -322,7 +322,7 @@
         {
             "action": "convert list to dict",
             "description": "Converts a list to a list of of dictionaries objects",
-            "verbose": "List can be submitted as a python list or a string representation of a list",
+            "verbose": "List can be submitted as a python list or a string representation of a list.",
             "type": "generic",
             "identifier": "convert_to_dict",
             "read_only": true,
@@ -462,7 +462,7 @@
         },
         {
             "action": "replace partial string",
-            "description": "Replaces parts of a string.",
+            "description": "Replaces parts of a string",
             "type": "generic",
             "identifier": "replace_partial_string",
             "read_only": true,
@@ -533,8 +533,7 @@
         },
         {
             "action": "hash text",
-            "description": "Gets md5, sha1, and sha256 hash of given text.",
-            "verbose": "",
+            "description": "Gets md5, sha1, and sha256 hash of given text",
             "type": "generic",
             "identifier": "hash_text",
             "read_only": true,
@@ -578,7 +577,7 @@
         {
             "action": "multi collect",
             "description": "Collects artifact fields from multiple datapaths",
-            "verbose": "An example of when to use this - external IP data is in sourceAddress and destinationAddress and an IP reputation check is needed on both. Multi collect them into one field and then pass the resulting multi-collected field into Virus Total",
+            "verbose": "An example of when to use this - external IP data is in sourceAddress and destinationAddress and an IP reputation check is needed on both. Multi collect them into one field and then pass the resulting multi-collected field into Virus Total.",
             "type": "generic",
             "identifier": "multi_collect",
             "read_only": true,
