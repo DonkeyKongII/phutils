@@ -143,8 +143,7 @@
                 },
                 "regex": {
                     "description": "regex",
-                    "data_type": "string",
-                    "default": "",
+                    "data_type": "string", 
                     "order": 2
                 },
                 "ignore_case": {
