@@ -54,7 +54,8 @@ class phutilities_connector(BaseConnector):
                 'hash_text': self._hash_text,
                 'split_string': self._split,
                 'modify_number': self._modify_number,
-                'convert_to_dict': self._convert_to_dict
+                'convert_to_dict': self._convert_to_dict,
+                'unshorten_url': self._unshorten_url
             }
 
             run_action = supported_actions[action_id]
@@ -83,6 +84,43 @@ class phutilities_connector(BaseConnector):
                     + '/rest/cef_metadata.'
                 )
             )
+
+    def _unshorten_url(self, param, action_id):
+        shortened_url = param['url']
+        session = requests.session()
+
+        action_result = self.add_action_result(ActionResult(dict(param)))
+
+        message = 'Successfully unshortened url'
+
+        try:
+            response = session.head(shortened_url, allow_redirects=True)
+        except Exception as err:
+            return action_result.set_status(
+                    phantom.APP_ERROR,
+                    (
+                        'Error unshortening url "' + shortened_url
+                        + '. Details - ' + err.message
+                    )
+                )
+
+        if (
+            response.url
+            and response.url.lower() == shortened_url.lower()
+        ):
+            message = "Unable to unshorten url."
+
+        data = {
+            'unshortened_url': response.url
+        }
+
+        action_result.update_summary({'unshortened_url': response.url})
+        action_result.add_data(data)
+
+        return action_result.set_status(
+            phantom.APP_SUCCESS,
+            message
+        )
 
     def _modify_number(self, param, action_id):
         num_to_modify = param.get("number", param.get("default_number"))
