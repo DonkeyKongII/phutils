@@ -17,6 +17,7 @@ from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
 import hashlib
 from py_expression_eval import Parser
+from bs4 import UnicodeDammit
 
 
 class phutilities_connector(BaseConnector):
@@ -56,6 +57,7 @@ class phutilities_connector(BaseConnector):
                 'modify_number': self._modify_number,
                 'convert_to_dict': self._convert_to_dict,
                 'unshorten_url': self._unshorten_url
+                'change_encoding': self._change_encoding
             }
 
             run_action = supported_actions[action_id]
@@ -84,6 +86,32 @@ class phutilities_connector(BaseConnector):
                     + '/rest/cef_metadata.'
                 )
             )
+
+    def _change_encoding(self, param, action_id):
+        start_text = param['text']
+        encoding = param['encoding']
+
+        action_result = self.add_action_result(ActionResult(dict(param)))
+
+        try:
+            encoded_text = UnicodeDammit(
+                start_text
+            ).unicode_markup.encode(encoding)
+        except Exception as err:
+            return self.set_status_save_progress(
+                phantom.APP_ERROR,
+                (
+                    'Could not encode text with ' + encoding + '. '
+                    + 'Details - ' + err.message
+                )
+            )
+
+        action_result.add_data({'encoded_text': encoded_text})
+
+        return action_result.set_status(
+            phantom.APP_SUCCESS,
+            'Successfully encoded string with ' + encoding + '.'
+        )
 
     def _unshorten_url(self, param, action_id):
         shortened_url = param['url']
