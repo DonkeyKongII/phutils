@@ -56,7 +56,7 @@ class phutilities_connector(BaseConnector):
                 'split_string': self._split,
                 'modify_number': self._modify_number,
                 'convert_to_dict': self._convert_to_dict,
-                'unshorten_url': self._unshorten_url
+                'unshorten_url': self._unshorten_url,
                 'change_encoding': self._change_encoding
             }
 
