@@ -1,5 +1,5 @@
 # File: phutils_connector.py
-# Copyright (c) 2018 Splunk Inc.
+# Copyright (c) 2018-2019 Splunk Inc.
 #
 # SPLUNK CONFIDENTIAL - Use or disclosure of this material in whole or in part
 # without a valid written license from Splunk Inc. is PROHIBITED.
@@ -18,6 +18,7 @@ from dateutil.relativedelta import relativedelta
 import hashlib
 from py_expression_eval import Parser
 from bs4 import UnicodeDammit
+from urlparse import urlparse
 
 
 class phutilities_connector(BaseConnector):
@@ -57,7 +58,15 @@ class phutilities_connector(BaseConnector):
                 'modify_number': self._modify_number,
                 'convert_to_dict': self._convert_to_dict,
                 'unshorten_url': self._unshorten_url,
-                'change_encoding': self._change_encoding
+                'change_encoding': self._change_encoding,
+                'make_table': self._make_table,
+                'get_pin': self._get_pin,
+                'parse_url': self._parse_url,
+                'get_indicator': self._handle_get_ioc,
+                'add_indicator_tag': self._add_ioc_tag,
+                'update_artifact': self._update_artifact,
+                'modify_string': self._modify_string,
+                'update_container': self._update_container
             }
 
             run_action = supported_actions[action_id]
@@ -85,6 +94,329 @@ class phutilities_connector(BaseConnector):
                     'Successfully connected to Phantom REST API endpoint '
                     + '/rest/cef_metadata.'
                 )
+            )
+
+    def _modify_string(self, param, action_id):
+        action_result = self.add_action_result(ActionResult(dict(param)))
+        
+        output = ''
+
+        try:
+            if param['action'] == "lower":
+                output = param["string"].lower()
+            else:
+                output = param["string"].upper()
+        except Exception as err:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Unable to parse "data" field - ' + err.message
+            )
+        
+        action_result.add_data({'modified_string': output})
+        
+        return action_result.set_status(
+                phantom.APP_SUCCESS,
+                'Successfully {}\'d string ({})'.format(param['action'], param['string'])
+            )
+
+    def _get_pin(self, param, action_id):
+
+        action_result = self.add_action_result(ActionResult(dict(param)))
+
+        container_id = param['container_id']
+        query = param.get('query', '')
+
+        endpoint = (
+            '/rest/container_pin?_filter_container_id=' 
+            + str(container_id)
+            + ('&' + query if query else '')
+        )
+
+        config = self.get_config()
+
+        resp_data = self._send_request(config, endpoint, 'get')
+
+        if 'data' not in resp_data:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Unable to retreive pins'
+            )
+
+        for data in resp_data['data']:
+            action_result.add_data({
+                'pin_type': data['pin_type'],
+                'container_id': data['container'],
+                'author': data['author'],
+                'modified_time': data['modified_time'],
+                'create_time': data['create_time'],
+                'playbook': data['playbook'],
+                'message': data['message'],
+                'data': data['data'],
+                'id': data['id'],
+                'pin_style': data['pin_style']
+            })
+
+        action_result.update_summary({
+            'pins_found': resp_data['count']
+        })
+            
+        return action_result.set_status(
+            phantom.APP_SUCCESS,
+            'Successfully retrieved pins'
+        )
+
+    def _make_table(self, param, action_id):
+        # TODO - Implement this code
+        container_id = param['container_id']
+        action_result = self.add_action_result(ActionResult(dict(param)))
+
+        container_info = self.get_container_info(container_id)
+
+        fields = []
+
+        self.debug_print(str(container_info))
+
+        return self.set_status_save_progress(phantom.APP_ERROR)
+
+    def _field_updater(self, data, update_data, overwrite):
+        if type(update_data) == list:
+            if not(overwrite):
+                return(list(set((data or []) + update_data)))
+            else:
+                return(update_data)
+        elif type(update_data) == dict:
+            for keya in update_data.keys():
+                data[keya] = self._field_updater(data.get(keya, {}), update_data[keya], overwrite)
+        else:
+            if (overwrite and data) or not(data):
+                return update_data
+        
+        return data
+
+    def _update_container(self, param, action_id):
+        config = self.get_config()
+        action_result = self.add_action_result(ActionResult(dict(param)))
+
+        container_id = param['container_id']
+        data = param['data']
+
+        try:
+            update_data = json.loads(data)
+        except Exception as err:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Unable to parse "data" field - ' + err.message
+            )
+        
+        try:
+            post_data = self._send_request(config, '/rest/container/{}'.format(container_id), 'POST', payload=json.dumps(update_data))
+        except Exception as err:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Unable to save container data - ' + err.message
+            )
+
+        if not(post_data.get('success')):
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Unable to save container data - ' + str(post_data)
+            )
+
+        return action_result.set_status(
+                phantom.APP_SUCCESS,
+                'Successfully updated container (ID: {})'.format(container_id)
+            )
+
+    def _update_artifact(self, param, action_id):
+        config = self.get_config()
+        action_result = self.add_action_result(ActionResult(dict(param)))
+
+        artifact_id = param['artifact_id']
+        data = param['data']
+        overwrite = param.get('overwrite')
+
+        try:
+            data = json.loads(data)
+        except Exception as err:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Unable to parse "data" field - ' + err.message
+            )
+        
+        try:
+            artifact_data = self._send_request(config, '/rest/artifact/{}'.format(artifact_id), 'GET')
+        except Exception as err:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Unable to retrieve artifact data - ' + err.message
+            )
+
+        if not(artifact_data):
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Artifact not found with id {} - {}'.format(artifact_id)
+            )
+        
+        update_data = {}
+
+        for key in data.keys():
+            update_data[key] = self._field_updater(artifact_data.get(key, {}), data[key], overwrite)
+            
+        self.debug_print("artifacto", update_data)
+
+        try:
+            post_data = self._send_request(config, '/rest/artifact/{}'.format(artifact_id), 'POST', payload=json.dumps(update_data))
+        except Exception as err:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Unable to save artifact data - ' + err.message
+            )
+
+        if not(post_data.get('success')):
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Unable to save artifact data - ' + str(post_data)
+            )
+
+        return action_result.set_status(
+                phantom.APP_SUCCESS,
+                'Successfully updated artifact (ID: {})'.format(artifact_id)
+            )
+
+    def _get_ioc(self, config, ioc_value, ioc_id):
+        if ioc_id:
+            endpoint = '/rest/indicator/{0}'.format(ioc_id)
+        else:
+            params = {
+                'indicator_value': ioc_value
+            }
+            endpoint = '/rest/indicator_by_value'
+
+        resp_data = self._send_request(config, endpoint, 'get', params=params)
+
+        return(resp_data)
+    
+    def _get_artifact_data_with_ioc(self, config, page_size, order, ioc_id):
+        params = {
+            'indicator_id': ioc_id,
+            'order': order,
+            'page': 0,
+            'page_size': page_size
+        }
+        endpoint = '/rest/indicator_artifact'
+
+        resp_data = self._send_request(config, endpoint, 'get', params=params)
+
+        return resp_data
+
+    def _handle_get_ioc(self, param, action_id):
+        ioc_value = param.get('ioc_value')
+        ioc_id = param.get('ioc_id')
+
+        action_result = self.add_action_result(ActionResult(dict(param)))
+
+        if not(ioc_value or ioc_id):
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Either and ioc_value or ioc_id must be provided'
+            )
+
+        config = self.get_config()
+
+        resp_data = self._get_ioc(config, ioc_value, ioc_id)
+
+        if 'id' not in resp_data:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Unable to find indicator'
+            )
+
+        if param.get('include_artifact_data'):
+            artifact_resp_data = self._get_artifact_data_with_ioc(config, param.get('artifact_limit', 10), param.get('artifact_sort', 'desc'), resp_data['id'])
+            if 'data' not in artifact_resp_data:
+                return action_result.set_status(
+                    phantom.APP_ERROR,
+                    'Unable to get artifact data related to indicator'
+                )
+            self.debug_print('awesomeo', artifact_resp_data)
+            resp_data['artifacts'] = artifact_resp_data['data']
+
+        summary = {
+            'ioc_id': resp_data['id'],
+            'ioc_value': resp_data['value'],
+            'tags': resp_data['tags']
+        }
+
+        resp_data['tags'] = [{'tag': tag} for tag in resp_data['tags']]
+
+        action_result.update_summary(summary)
+
+        action_result.add_data(resp_data)
+
+        return action_result.set_status(
+                phantom.APP_SUCCESS,
+                'Successfully retrieved indicator (' + resp_data['value'] + ')'
+            )
+
+    def _add_ioc_tag(self, param, action_id):
+        ioc_value = param.get('ioc_value')
+        ioc_id = param.get('ioc_id')
+
+        tags_to_add = param.get('tags_to_add','').split(',')
+        tags_to_remove = param.get('tags_to_remove', '').split(',')
+
+        action_result = self.add_action_result(ActionResult(dict(param)))
+        config = self.get_config()
+
+        if not(ioc_value or ioc_id):
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Either an ioc_value or ioc_id must be provided'
+            )
+        
+        if not(tags_to_add or tags_to_remove):
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Either tags_to_add or tags_to_remove must be provided'
+            )
+
+        resp_data = self._get_ioc(config, ioc_value, ioc_id)
+
+        if 'id' not in resp_data:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Unable to find indicator'
+            )
+
+        endpoint = '/rest/indicator/{0}'.format(resp_data['id'])
+
+        tags = [tag for tag in list(set(tags_to_add + resp_data['tags'])) if tag not in tags_to_remove]
+
+        payload = {
+            'tags': tags
+        }
+
+        self.debug_print('payloado', payload)
+
+        tag_resp_data = self._send_request(config, endpoint, 'post', payload=json.dumps(payload))
+
+        if not(tag_resp_data.get('success')):
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Unable to add tag: ' + str(tag_resp_data)
+            )
+        
+        summary = {
+            'ioc_id': resp_data['id'],
+            'ioc_value': resp_data['value'],
+            'tags': tags
+        }
+
+        action_result.update_summary(summary)
+
+        return action_result.set_status(
+                phantom.APP_SUCCESS,
+                'Successfully updated tags (' + str(tags) + ') to indicator (' + resp_data['value'] + ')'
             )
 
     def _change_encoding(self, param, action_id):
@@ -115,14 +447,13 @@ class phutilities_connector(BaseConnector):
 
     def _unshorten_url(self, param, action_id):
         shortened_url = param['url']
-        session = requests.session()
 
         action_result = self.add_action_result(ActionResult(dict(param)))
 
         message = 'Successfully unshortened url'
 
         try:
-            response = session.head(shortened_url, allow_redirects=True)
+            response = requests.get(shortened_url)
         except Exception as err:
             return action_result.set_status(
                     phantom.APP_ERROR,
@@ -147,7 +478,7 @@ class phutilities_connector(BaseConnector):
 
         return action_result.set_status(
             phantom.APP_SUCCESS,
-            message
+            message + ' - ' + response.url
         )
 
     def _modify_number(self, param, action_id):
@@ -281,6 +612,22 @@ class phutilities_connector(BaseConnector):
 
         return list_data
 
+    def _parse_url(self, param, action_id):
+        url_to_parse = param['url_to_parse']
+
+        action_result = self.add_action_result(ActionResult(dict(param)))
+
+        parsed_url = urlparse(url_to_parse)
+
+        results = parsed_url._asdict()
+
+        action_result.add_data(results)
+
+        return action_result.set_status(
+            phantom.APP_SUCCESS,
+            'Successfully parsed URL.'
+        )
+
     def _split(self, param, action_id):
         key_name = param['field_name'].split(',')
         result_dict = {'result_dict': []}
@@ -356,7 +703,7 @@ class phutilities_connector(BaseConnector):
         field_name = param['field_name']
 
         if len(data_paths) < 2:
-            return phantom.set_status(
+            return action_result.set_status(
                 phantom.APP_ERROR,
                 'Do not use multi_collect to collect from only one datapath.'
             )
@@ -377,7 +724,7 @@ class phutilities_connector(BaseConnector):
 
             data_path = data_path.split(':')
             if len(data_path) != 2:
-                return phantom.set_status(
+                return action_result.set_status(
                     phantom.APP_ERROR,
                     (
                         'data_path incorrectly formatted - should look like '
@@ -388,7 +735,7 @@ class phutilities_connector(BaseConnector):
                 )
 
             if 'action_result' in data_path[0]:
-                return phantom.set_status(
+                return action_result.set_status(
                     phantom.APP_ERROR,
                     (
                         '"multi collect" only works with artifact data, '
@@ -440,108 +787,26 @@ class phutilities_connector(BaseConnector):
         return action_result.set_status(phantom.APP_SUCCESS, 'Collected data')
 
     def _add_to_datapath(self, param, action_id):
-        config = self.get_config()
-
-        data_list = param.get('data_list')
-        contains = param.get('contains')
-        data_type = param.get('data_type')
-        data_dict = param.get('data_dict')
-
         action_result = self.add_action_result(ActionResult(dict(param)))
 
-        if not(data_dict) and not(data_list):
-            return action_result.set_status(
-                    phantom.APP_ERROR,
-                    'Either data_dict or data_list parameter must be provided.'
-                )
+        data_dict = param['data_dict']
 
-        if data_dict:
-            if (contains or data_type):
-                return action_result.set_status(
-                    phantom.APP_ERROR,
-                    (
-                        'Cannot set both ("contains" or "data type") and '
-                        + '"data dictionary." Please use one or the '
-                        + 'other.'
-                    )
-                )
-            else:
-                try:
-                    data_dict = json.loads(data_dict)
-                except Exception:
-                    return action_result.set_status(
-                        phantom.APP_ERROR,
-                        'Invalid json in data_dict field'
-                    )
-                contains = [
-                    dict_item['contains']
-                    for dict_item in data_dict
-                    if dict_item.get('contains')
-                ]
-
-                data_type = [
-                    dict_item['data_type']
-                    for dict_item in data_dict
-                    if dict_item['data_type']
-                ]
-        else:
-            try:
-                data_list = json.loads(data_list)
-            except Exception:
-                try:
-                    data_list = re.sub(
-                        r'(^\[)|(\]$)',
-                        '',
-                        data_list
-                    ).replace('", ', '",').split('","')
-                except Exception:
-                    return action_result.set_status(
-                        phantom.APP_ERROR,
-                        'Unable to convert data_list to list.'
-                    )
-            contains = [contains] if contains else []
-            data_type = [data_type]
-
-        response = self._send_request(config, '/rest/cef_metadata', 'get')
-        contains_master_list = response['all_contains']
-
-        invalid_contains = set(contains) - set(contains_master_list)
-
-        if len(invalid_contains) > 0:
+        try:
+            data_dict = json.loads(data_dict)
+        except Exception:
             return action_result.set_status(
                 phantom.APP_ERROR,
-                ', '.join(invalid_contains) + ' not valid for "contains." Use '
-                + 'api endoint /rest/cef_metadata to see complete valid list.'
+                'Invalid json in data_dict field'
             )
 
-        item_count = 0
+        item_count = 1
 
-        if data_list:
-            field_name = param.get('field_name') or 'added_field'
-
-            for datum in data_list:
-                action_result.add_data({
-                    'added_data': {
-                        field_name: re.sub(r'(^")|("$)', '', datum)
-                    }
-                })
-                item_count += 1
-
-        else:
-            for dict_item in data_dict:
-                field_name = (
-                    dict_item.get('field_name') or 'added_field'
-                )
-                action_result.add_data({
-                    'added_data': {
-                        field_name: dict_item['data']
-                    }
-                })
-                item_count += 1
-
-        item_count = len(data_dict) if data_dict else len(data_list)
+        if type(data_dict) == list:
+            item_count = len(data_dict)
 
         action_result.update_summary({'items_added': item_count})
+
+        action_result.add_data({'added_data': data_dict})
 
         return(action_result.set_status(phantom.APP_SUCCESS))
 
@@ -736,12 +1001,13 @@ class phutilities_connector(BaseConnector):
 
     def _send_request(
         self, config, url, method,
-        payload=None, content_type=None
+        payload=None, content_type=None,
+        params=None
     ):
         url = 'https://' + config['base_url'] + url
         request_func = getattr(requests, method.lower())
 
-        header = None
+        header = {}
         auth = None
 
         if config.get('auth_token'):
@@ -753,9 +1019,11 @@ class phutilities_connector(BaseConnector):
             'audit' in url
             or 'ph_user' in url
             or 'action_run' in url
-            or header is None
+            or not(header)
         ):
             auth = (config['username'], config['password'])
+
+        header['Content-Type'] = 'application/json'
 
         if request_func is None:
             raise ValueError('Incorrect requests action specified')
@@ -765,7 +1033,8 @@ class phutilities_connector(BaseConnector):
                 url,
                 headers=header,
                 data=payload,
-                verify=config['verify_certificate'],
+                params=params,
+                verify=config.get('verify_certificate') or False,
                 auth=auth
             )
 

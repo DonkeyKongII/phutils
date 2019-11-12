@@ -14,7 +14,7 @@
     "min_phantom_version": "3.5.188",
     "logo": "logo_phantom.svg",
     "logo_dark": "logo_phantom_dark.svg",
-    "license": "Copyright (c) 2018 Splunk Inc.",
+    "license": "Copyright (c) 2018-2019 Splunk Inc.",
     "configuration": {
         "base_url": {
             "data_type": "string",
@@ -40,7 +40,8 @@
         "verify_certificate": {
             "data_type": "boolean",
             "order": 4,
-            "description": "Verify Server Certificate"
+            "description": "Verify Server Certificate",
+            "default": true
         }
     },
     "pip_dependencies": {
@@ -85,11 +86,15 @@
                     "required": true
                 }
             },
-            "output":[
+            "output": [
                 {
                     "data_path": "action_result.status",
                     "data_type": "string",
                     "column_name": "Status"
+                },
+                {
+                    "data_path": "action_result.parameter.encoding",
+                    "data_type": "string"
                 },
                 {
                     "data_path": "action_result.parameter.text",
@@ -97,6 +102,604 @@
                 },
                 {
                     "data_path": "action_result.data.*.encoded_text",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "column_name": "Message"
+                }
+            ],
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "modify string",
+            "description": "modifies a string",
+            "type": "generic",
+            "identifier": "modify_string",
+            "read_only": false,
+            "parameters": {
+                "string": {
+                    "description": "string",
+                    "data_type": "numeric",
+                    "required": true,
+                    "primary": true
+                },
+                "action": {
+                    "description": "update data",
+                    "data_type": "string",
+                    "required": true,
+                    "value_list": [
+                        "upper",
+                        "lower"
+                    ]
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "column_name": "Status"
+                },
+                {
+                    "data_path": "action_result.parameter.action",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.string",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.modified_string",
+                    "data_type": "boolean"
+                },
+                {
+                    "data_path": "action_result.summary",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "column_name": "Message"
+                }
+            ],
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "update container",
+            "description": "Update container fields",
+            "type": "generic",
+            "identifier": "update_container",
+            "read_only": false,
+            "parameters": {
+                "container_id": {
+                    "description": "container_id",
+                    "data_type": "numeric",
+                    "required": true,
+                    "primary": true
+                },
+                "data": {
+                    "description": "update data",
+                    "data_type": "string",
+                    "required": true
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "column_name": "Status"
+                },
+                {
+                    "data_path": "action_result.parameter.container_id",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.parameter.data",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "column_name": "Message"
+                }
+            ],
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "update artifact",
+            "description": "Update artifact fields",
+            "type": "generic",
+            "identifier": "update_artifact",
+            "read_only": false,
+            "parameters": {
+                "artifact_id": {
+                    "description": "artifact_id",
+                    "data_type": "numeric",
+                    "required": true,
+                    "primary": true
+                },
+                "data": {
+                    "description": "update data",
+                    "data_type": "string",
+                    "required": true
+                },
+                "overwrite": {
+                    "description": "overwrite existing",
+                    "data_type": "boolean",
+                    "required": false
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "column_name": "Status"
+                },
+                {
+                    "data_path": "action_result.parameter.artifact_id",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.parameter.data",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.overwrite",
+                    "data_type": "boolean"
+                },
+                {
+                    "data_path": "action_result.data",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "column_name": "Message"
+                }
+            ],
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "modify indicator tag",
+            "description": "modifies indicator tags",
+            "type": "generic",
+            "identifier": "add_indicator_tag",
+            "read_only": false,
+            "parameters": {
+                "ioc_value": {
+                    "description": "ioc value",
+                    "data_type": "string",
+                    "order": 0,
+                    "required": false
+                },
+                "ioc_id": {
+                    "description": "ioc id",
+                    "data_type": "numeric",
+                    "order": 1,
+                    "required": false
+                },
+                "tags_to_add": {
+                    "description": "tags to add (comma separated)",
+                    "data_type": "string",
+                    "order": 2,
+                    "required": false
+                },
+                "tags_to_remove": {
+                    "description": "tags to remove (comma separated)",
+                    "data_type": "string",
+                    "order": 3,
+                    "required": false
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "column_name": "Status"
+                },
+                {
+                    "data_path": "action_result.parameter.ioc_id",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.parameter.ioc_value",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.tags_to_add",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.tags_to_remove",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "column_name": "Message"
+                }
+            ],
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "get indicator",
+            "description": "Adds tag to indicator",
+            "type": "generic",
+            "identifier": "get_indicator",
+            "read_only": false,
+            "parameters": {
+                "ioc_value": {
+                    "description": "ioc value",
+                    "data_type": "string",
+                    "order": 0,
+                    "required": false
+                },
+                "ioc_id": {
+                    "description": "ioc id",
+                    "data_type": "numeric",
+                    "order": 1,
+                    "required": false
+                },
+                "include_artifact_data": {
+                    "description": "include artifact data",
+                    "data_type": "boolean",
+                    "order": 2
+                },
+                "artifact_limit": {
+                    "description": "artifact limit",
+                    "data_type": "numeric",
+                    "order": 3
+                },
+                "artifact_sort": {
+                    "description": "artifact sort",
+                    "data_type": "string",
+                    "order": 4,
+                    "value_list": [
+                        "desc",
+                        "asc"
+                    ]
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "column_name": "Status"
+                },
+                {
+                    "data_path": "action_result.parameter.artifact_limit",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.parameter.artifact_sort",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.include_artifact_data",
+                    "data_type": "boolean"
+                },
+                {
+                    "data_path": "action_result.parameter.ioc_id",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.parameter.ioc_value",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.tags",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.cef",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.cef_types",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.container",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.container_name",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.create_time",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.description",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.end_time",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.has_note",
+                    "data_type": "boolean"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.hash",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.id",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.in_case",
+                    "data_type": "boolean"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.ingest_app",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.kill_chain",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.label",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.name",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.owner",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.parent_artifact",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.parent_container",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.playbook_run",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.severity",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.source_data_identifier",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.start_time",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.tags",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.type",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.update_time",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.artifacts.*.version",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.earliest_time",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.id",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.latest_time",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.open_events",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.severity_counts.*.count",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.severity_counts.*.name",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.tags.*.tag",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.tenant",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.total_events",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.value",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.ioc_id",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.ioc_value",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.tags",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "column_name": "Message"
+                }
+            ],
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "make table",
+            "description": "Make table",
+            "type": "generic",
+            "identifier": "make_table",
+            "read_only": true,
+            "parameters": {
+                "container_id": {
+                    "description": "Container ID",
+                    "data_type": "numeric",
+                    "order": 0
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "column_name": "Status",
+                    "column_order": 1
+                },
+                {
+                    "data_path": "action_result.parameter.container_id",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.parameter.data_dict",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.added_data",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.items_added",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "column_name": "Message",
+                    "column_order": 2
+                }
+            ],
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "parse url",
+            "description": "Parses URL into 6 components (scheme, netloc, path, params, query, fragment) using Python urlparse",
+            "type": "generic",
+            "identifier": "parse_url",
+            "read_only": true,
+            "parameters": {
+                "url_to_parse": {
+                    "description": "url to parse",
+                    "data_type": "string",
+                    "contains": [
+                        "url"
+                    ],
+                    "required": true,
+                    "primary": true
+                }
+            },
+            "render": {
+                "type": "table",
+                "width": 2,
+                "height": 5,
+                "title": "Search Results"
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "column_name": "Status"
+                },
+                {
+                    "data_path": "action_result.parameter.url_to_parse",
+                    "data_type": "string",
+                    "contains": [
+                        "url"
+                    ],
+                    "column_order": 0,
+                    "column_name": "URL"
+                },
+                {
+                    "data_path": "action_result.data.*.frament",
+                    "data_type": "string",
+                    "column_order": 6,
+                    "column_name": "Fragment"
+                },
+                {
+                    "data_path": "action_result.data.*.netloc",
+                    "data_type": "string",
+                    "column_order": 2,
+                    "column_name": "Netloc"
+                },
+                {
+                    "data_path": "action_result.data.*.params",
+                    "data_type": "string",
+                    "column_order": 4,
+                    "column_name": "Params"
+                },
+                {
+                    "data_path": "action_result.data.*.path",
+                    "data_type": "string",
+                    "column_order": 3,
+                    "column_name": "Path"
+                },
+                {
+                    "data_path": "action_result.data.*.query",
+                    "data_type": "string",
+                    "column_order": 5,
+                    "column_name": "Query"
+                },
+                {
+                    "data_path": "action_result.data.*.scheme",
+                    "data_type": "string",
+                    "column_order": 1,
+                    "column_name": "Scheme"
+                },
+                {
+                    "data_path": "action_result.summary",
                     "data_type": "string"
                 },
                 {
@@ -117,7 +720,9 @@
                 "url": {
                     "description": "url to unshorten",
                     "data_type": "string",
-                    "contains": ["url"],
+                    "contains": [
+                        "url"
+                    ],
                     "required": true,
                     "primary": true
                 }
@@ -128,7 +733,7 @@
                 "height": 5,
                 "title": "Search Results"
             },
-            "output":[
+            "output": [
                 {
                     "data_path": "action_result.status",
                     "data_type": "string",
@@ -137,21 +742,27 @@
                 {
                     "data_path": "action_result.parameter.url",
                     "data_type": "string",
-                    "contains": ["url"],
+                    "contains": [
+                        "url"
+                    ],
                     "column_order": 0,
                     "column_name": "Shortened URL"
                 },
                 {
                     "data_path": "action_result.data.*.unshortened_url",
                     "data_type": "string",
-                    "contains": ["url"],
+                    "contains": [
+                        "url"
+                    ],
                     "column_order": 1,
                     "column_name": "Unshortened URL"
                 },
                 {
                     "data_path": "action_result.summary.unshortend_url",
                     "data_type": "string",
-                    "contains": ["url"]
+                    "contains": [
+                        "url"
+                    ]
                 },
                 {
                     "data_path": "action_result.message",
@@ -184,7 +795,7 @@
                 },
                 "regex": {
                     "description": "regex",
-                    "data_type": "string", 
+                    "data_type": "string",
                     "order": 2
                 },
                 "ignore_case": {
@@ -202,6 +813,10 @@
                     "column_order": 1
                 },
                 {
+                    "data_path": "action_result.parameter.ignore_case",
+                    "data_type": "boolean"
+                },
+                {
                     "data_path": "action_result.parameter.output_string",
                     "data_type": "string"
                 },
@@ -210,12 +825,12 @@
                     "data_type": "string"
                 },
                 {
-                    "data_path": "action_result.parameter.string_to_format",
-                    "data_type": "string"
-                },
-                {
                     "data_path": "action_result.parameter.string_found",
                     "data_type": "boolean"
+                },
+                {
+                    "data_path": "action_result.parameter.string_to_format",
+                    "data_type": "string"
                 },
                 {
                     "data_path": "action_result.data.*.formatted_string",
@@ -270,7 +885,7 @@
                     "column_order": 1
                 },
                 {
-                    "data_path": "action_result.parameter.number",
+                    "data_path": "action_result.parameter.default_number",
                     "data_type": "string"
                 },
                 {
@@ -278,16 +893,20 @@
                     "data_type": "string"
                 },
                 {
-                    "data_path": "action_result.summary.result",
-                    "data_type": "numeric"
+                    "data_path": "action_result.parameter.number",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.expression",
+                    "data_type": "string"
                 },
                 {
                     "data_path": "action_result.data.*.result",
                     "data_type": "numeric"
                 },
                 {
-                    "data_path": "action_result.data.*.expression",
-                    "data_type": "string"
+                    "data_path": "action_result.summary.result",
+                    "data_type": "numeric"
                 }
             ],
             "versions": "EQ(*)"
@@ -333,15 +952,7 @@
                     "column_order": 1
                 },
                 {
-                    "data_path": "action_result.parameter.string_to_split",
-                    "data_type": "string"
-                },
-                {
                     "data_path": "action_result.parameter.delimiter",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.parameter.qualifier",
                     "data_type": "string"
                 },
                 {
@@ -349,12 +960,20 @@
                     "data_type": "string"
                 },
                 {
-                    "data_path": "action_result.summary.item_count",
-                    "data_type": "numeric"
+                    "data_path": "action_result.parameter.qualifier",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.string_to_split",
+                    "data_type": "string"
                 },
                 {
                     "data_path": "action_result.data.*.result_dict",
                     "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.item_count",
+                    "data_type": "numeric"
                 }
             ],
             "versions": "EQ(*)"
@@ -389,20 +1008,20 @@
                     "column_order": 1
                 },
                 {
+                    "data_path": "action_result.parameter.field_name",
+                    "data_type": "string"
+                },
+                {
                     "data_path": "action_result.parameter.list",
                     "data_type": "string"
                 },
                 {
-                    "data_path": "action_result.parameter.field_name",
+                    "data_path": "action_result.data.*.result_dict",
                     "data_type": "string"
                 },
                 {
                     "data_path": "action_result.summary.item_count",
                     "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.data.*.result_dict",
-                    "data_type": "string"
                 }
             ],
             "versions": "EQ(*)"
@@ -496,6 +1115,98 @@
                     "data_type": "string",
                     "column_name": "Message",
                     "column_order": 2
+                }
+            ],
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "get pin",
+            "description": "Gets pins from HUD",
+            "verbose": "",
+            "type": "generic",
+            "identifier": "get_pin",
+            "read_only": true,
+            "parameters": {
+                "container_id": {
+                    "description": "ID of container",
+                    "data_type": "numeric",
+                    "order": 0,
+                    "required": true,
+                    "contains": [
+                        "phantom container id"
+                    ],
+                    "primary": true
+                },
+                "query": {
+                    "description": "Query to get specific pins",
+                    "data_type": "string",
+                    "order": 1,
+                    "required": false
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.container_id",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.parameter.query",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.container_id",
+                    "data_type": "numeric",
+                    "contains": [
+                        "phantom container id"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.create_time",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.data",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.id",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.message",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.modified_time",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.pin_style",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.pin_type",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.playbook",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "summary.pins_found",
+                    "data_type": "numeric"
                 }
             ],
             "versions": "EQ(*)"
@@ -599,17 +1310,30 @@
                 {
                     "data_path": "action_result.data.*.md5",
                     "data_type": "string",
-                    "contains": ["fileHash", "md5"]
+                    "contains": [
+                        "fileHash",
+                        "md5"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.sha1",
                     "data_type": "string",
-                    "contains": ["fileHash", "sha1"]
+                    "contains": [
+                        "fileHash",
+                        "sha1"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.sha256",
                     "data_type": "string",
-                    "contains": ["fileHash", "sha256"]
+                    "contains": [
+                        "fileHash",
+                        "sha256"
+                    ]
+                },
+                {
+                    "data_path": "action_result.summary",
+                    "data_type": "string"
                 }
             ],
             "versions": "EQ(*)"
@@ -657,8 +1381,16 @@
                     "column_order": 1
                 },
                 {
+                    "data_path": "action_result.parameter.container_id",
+                    "data_type": "numeric"
+                },
+                {
                     "data_path": "action_result.parameter.data_paths",
                     "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.de_dupe",
+                    "data_type": "boolean"
                 },
                 {
                     "data_path": "action_result.parameter.field_name",
@@ -667,6 +1399,10 @@
                 {
                     "data_path": "action_result.data.*.added_data.artifact_ids.*.artifact_id",
                     "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.summary",
+                    "data_type": "string"
                 }
             ],
             "versions": "EQ(*)"
@@ -674,42 +1410,14 @@
         {
             "action": "add to datapath",
             "description": "Adds data to datapath",
-            "verbose": "Use data_list if you want to add one or several values to the datapath that are all of the same type.<br /><br />Example:<br/>Adding three IPs to the datapath would be performed like so - data_list='[\"1.1.1.1\",\"2.2.2.2\",\"8.8.8.8\"]', data_type='string', contains='ip'.<br /><br />If you want to add multiple values to the datapath that are of different types use data_dict. Data_list and data_dict cannot be used together.<br /><br />Example:<br/>To add a string and an IP to the datapath set data_dict to '[{\"data\": \"8.8.8.8\", \"data_type\": \"string\", \"contains\": \"ip\"}, {\"data\": \"some string\", \"data_type\": \"string\"}].<br /><br />If a field_name parameter is provided that field_name will be used for the datapath output, otherwise 'added_field' will be used.",
             "type": "generic",
             "identifier": "add_to_datapath",
             "read_only": true,
             "parameters": {
-                "data_list": {
-                    "description": "List of data elements",
-                    "data_type": "string",
-                    "order": 0
-                },
-                "data_type": {
-                    "description": "Date Type",
-                    "data_type": "string",
-                    "default": "",
-                    "value_list": [
-                        "",
-                        "string",
-                        "numeric",
-                        "boolean"
-                    ],
-                    "order": 1
-                },
-                "contains": {
-                    "description": "Contains Type",
-                    "data_type": "string",
-                    "order": 2
-                },
                 "data_dict": {
                     "description": "List of Dicts",
                     "data_type": "string",
-                    "order": 3
-                },
-                "field_name": {
-                    "description": "Field Name",
-                    "data_type": "string",
-                    "order": 4
+                    "order": 0
                 }
             },
             "output": [
@@ -720,40 +1428,16 @@
                     "column_order": 1
                 },
                 {
-                    "data_path": "action_result.parameter.contains",
-                    "data_type": "string"
-                },
-                {
                     "data_path": "action_result.parameter.data_dict",
                     "data_type": "string"
                 },
                 {
-                    "data_path": "action_result.parameter.data_list",
+                    "data_path": "action_result.data.*.added_data",
                     "data_type": "string"
                 },
                 {
-                    "data_path": "action_result.parameter.data_type",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.parameter.field_name",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.data.*.string",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.data.*.numeric",
+                    "data_path": "action_result.summary.items_added",
                     "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.data.*.boolean",
-                    "data_type": "boolean"
-                },
-                {
-                    "data_path": "action_result.summary",
-                    "data_type": "string"
                 },
                 {
                     "data_path": "action_result.message",
