@@ -58,6 +58,7 @@ class phutilities_connector(BaseConnector):
                 'modify_number': self._modify_number,
                 'convert_to_dict': self._convert_to_dict,
                 'unshorten_url': self._unshorten_url,
+                'defang_url': self._defang_url,
                 'change_encoding': self._change_encoding,
                 'make_table': self._make_table,
                 'get_pin': self._get_pin,
@@ -480,7 +481,37 @@ class phutilities_connector(BaseConnector):
             phantom.APP_SUCCESS,
             message + ' - ' + response.url
         )
+    
+    def _defang_url(self, param, action_id):
+        fanged_url = param['url']
 
+        action_result = self.add_action_result(ActionResult(dict(param)))
+
+        try:
+            if '://' in fanged_url:
+                split_url = fanged_url.split('://', 1)
+                split_url[0] = split_url[0].replace('t', 'x')
+                split_url[1] = split_url[1].replace('.', '[.]')
+                defanged_url = split_url[0] + "://" + split_url[1]
+
+            # Look for urls without http, https, ftp
+            else:
+                defanged_url = fanged_url.replace('.', '[.]')
+        except Exception as err:
+            return self.set_status_save_progress(
+                phantom.APP_ERROR,
+                (
+                    'Could not defang_url ' + fanged_url + '. ' + 'Details - ' + err.message
+                )
+            )
+
+        action_result.add_data({'defanged_url': defanged_url})
+
+        return action_result.set_status(
+            phantom.APP_SUCCESS,
+            'Successfully defanged_url ' + defanged_url + '.'
+        )
+    
     def _modify_number(self, param, action_id):
         num_to_modify = param.get("number", param.get("default_number"))
         expression = param["expression"]
