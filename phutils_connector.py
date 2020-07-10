@@ -98,7 +98,7 @@ class phutilities_connector(BaseConnector):
 
     def _modify_string(self, param, action_id):
         action_result = self.add_action_result(ActionResult(dict(param)))
-        
+
         output = ''
 
         try:
@@ -111,9 +111,9 @@ class phutilities_connector(BaseConnector):
                 phantom.APP_ERROR,
                 'Unable to parse "data" field - ' + err.message
             )
-        
+
         action_result.add_data({'modified_string': output})
-        
+
         return action_result.set_status(
                 phantom.APP_SUCCESS,
                 'Successfully {}\'d string ({})'.format(param['action'], param['string'])
@@ -127,7 +127,7 @@ class phutilities_connector(BaseConnector):
         query = param.get('query', '')
 
         endpoint = (
-            '/rest/container_pin?_filter_container_id=' 
+            '/rest/container_pin?_filter_container_id='
             + str(container_id)
             + ('&' + query if query else '')
         )
@@ -159,7 +159,7 @@ class phutilities_connector(BaseConnector):
         action_result.update_summary({
             'pins_found': resp_data['count']
         })
-            
+
         return action_result.set_status(
             phantom.APP_SUCCESS,
             'Successfully retrieved pins'
@@ -190,7 +190,7 @@ class phutilities_connector(BaseConnector):
         else:
             if (overwrite and data) or not(data):
                 return update_data
-        
+
         return data
 
     def _update_container(self, param, action_id):
@@ -207,7 +207,7 @@ class phutilities_connector(BaseConnector):
                 phantom.APP_ERROR,
                 'Unable to parse "data" field - ' + err.message
             )
-        
+
         try:
             post_data = self._send_request(config, '/rest/container/{}'.format(container_id), 'POST', payload=json.dumps(update_data))
         except Exception as err:
@@ -242,7 +242,7 @@ class phutilities_connector(BaseConnector):
                 phantom.APP_ERROR,
                 'Unable to parse "data" field - ' + err.message
             )
-        
+
         try:
             artifact_data = self._send_request(config, '/rest/artifact/{}'.format(artifact_id), 'GET')
         except Exception as err:
@@ -256,12 +256,12 @@ class phutilities_connector(BaseConnector):
                 phantom.APP_ERROR,
                 'Artifact not found with id {} - {}'.format(artifact_id)
             )
-        
+
         update_data = {}
 
         for key in data.keys():
             update_data[key] = self._field_updater(artifact_data.get(key, {}), data[key], overwrite)
-            
+
         self.debug_print("artifacto", update_data)
 
         try:
@@ -295,7 +295,7 @@ class phutilities_connector(BaseConnector):
         resp_data = self._send_request(config, endpoint, 'get', params=params)
 
         return(resp_data)
-    
+
     def _get_artifact_data_with_ioc(self, config, page_size, order, ioc_id):
         params = {
             'indicator_id': ioc_id,
@@ -373,7 +373,7 @@ class phutilities_connector(BaseConnector):
                 phantom.APP_ERROR,
                 'Either an ioc_value or ioc_id must be provided'
             )
-        
+
         if not(tags_to_add or tags_to_remove):
             return action_result.set_status(
                 phantom.APP_ERROR,
@@ -405,7 +405,7 @@ class phutilities_connector(BaseConnector):
                 phantom.APP_ERROR,
                 'Unable to add tag: ' + str(tag_resp_data)
             )
-        
+
         summary = {
             'ioc_id': resp_data['id'],
             'ioc_value': resp_data['value'],
