@@ -1,5 +1,5 @@
 # File: phutils_connector.py
-# Copyright (c) 2018-2019 Splunk Inc.
+# Copyright (c) 2018-2020 Splunk Inc.
 #
 # SPLUNK CONFIDENTIAL - Use or disclosure of this material in whole or in part
 # without a valid written license from Splunk Inc. is PROHIBITED.
@@ -66,7 +66,8 @@ class phutilities_connector(BaseConnector):
                 'add_indicator_tag': self._add_ioc_tag,
                 'update_artifact': self._update_artifact,
                 'modify_string': self._modify_string,
-                'update_container': self._update_container
+                'update_container': self._update_container,
+                'assess_risk': self._assess_risk
             }
 
             run_action = supported_actions[action_id]
@@ -295,6 +296,143 @@ class phutilities_connector(BaseConnector):
         resp_data = self._send_request(config, endpoint, 'get', params=params)
 
         return(resp_data)
+
+    def _assess_risk(self, param, action_id):
+        action_result = self.add_action_result(ActionResult(dict(param)))
+        config = self.get_config()
+
+        ioc_tag_prefix = config.get('ioc_tag_prefix')
+        ioc_threshold = config.get('ioc_score_threshold', 5)
+        ioc_max_value = config.get('ioc_max_value', 10)
+        custom_field_risk = config.get('custom_field_risk_score')
+        custom_field_related = config.get('custom_field_related')
+
+        params = {
+            '_filter_container_id': self.get_container_id()
+        }
+        resp_data = self._send_request(config, '/rest/artifact', 'get', params=params)
+
+        if resp_data.get('data') is None:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Unable to get IOC data from current container. Details - {}'.format(str(resp_data))
+            )
+
+        ioc_list = []
+
+        for artifact in resp_data['data']:
+            ioc_list += [v.replace('\\', '\\\\').replace('"', '\\\"') for k, v in artifact['cef'].items()]
+        
+        ioc_list = list(set(ioc_list))
+        ioc_regex_search = '"{}"'.format('|'.join(ioc_list))
+
+        risk_range = range(int(ioc_threshold), int(ioc_max_value)+1)
+        risk_regex = '"{}({}\\\")"'.format(ioc_tag_prefix, '\\\"|'.join(str(i) for i in risk_range if i))
+
+        indicator_params = {
+            '_filter_value__iregex': ioc_regex_search
+        }
+
+        indicator_resp_data = self._send_request(config, '/rest/indicator', 'get', params=indicator_params)
+
+        self.debug_print('monkey2', str(resp_data))
+
+        if indicator_resp_data.get('data') is None:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Unable to get IOC data from current container. Details - {}'.format(str(resp_data))
+            )
+
+        related_count = 0
+        top_risk_score = 0
+
+        indicator_list = {indicator: 0 for indicator in ioc_list}
+
+        if indicator_resp_data.get('count') > 0:
+            for indicator in indicator_resp_data['data']:
+                for tag in indicator['tags']:
+                    if tag.startswith(ioc_tag_prefix):
+                        print indicator
+                        risk_score = int(tag.replace(ioc_tag_prefix, ''))
+                        indicator_list[indicator['value']] = risk_score
+
+                        # if int(risk_score) >= ioc_threshold:
+                        #     indicator_list.append(indicator['value'])
+                        if int(risk_score) > top_risk_score:
+                            top_risk_score = risk_score
+                            print top_risk_score
+            
+            risky_indicator_list = [k for k,v in indicator_list.items() if v >= int(ioc_threshold)]
+            self.debug_print('cowabunga', str(risky_indicator_list))
+            if len(risky_indicator_list) > 0:
+                indicator_regex = '"({}\\\")"'.format('\\\"|'.join(risky_indicator_list))
+
+                risky_ioc_params = {
+                    '_filter_artifact__cef__iregex': indicator_regex
+                }
+
+                resp_data = self._send_request(config, '/rest/container', 'get', params=risky_ioc_params)
+
+                if not(resp_data.get('data')):
+                    return action_result.set_status(
+                        phantom.APP_ERROR,
+                        'Unable to get IOC data from related containers. Details - {}'.format(str(resp_data))
+                    )
+                
+                related_count = len(list(set([item.get('id') for item in resp_data.get('data', [])]))) - 1
+
+                counter = 0
+                for indicator in risky_indicator_list:
+                    counter += 1
+                    pin_data = {
+                        'container_id': self.get_container_id(),
+                        'name': '{} {}'.format(config.get('risky_ioc_card', 'High Risk IOC'), counter),
+                        'pin_type': 'manual card',
+                        'pin_style': 'red',
+                        'message': config.get('risky_ioc_card', 'High Risk IOC'),
+                        'data': indicator
+                    }
+
+                    resp_data = self._send_request(config, '/rest/container_pin', 'post', payload=json.dumps(pin_data))
+
+                    if not(resp_data.get('data')):
+                        return action_result.set_status(
+                            phantom.APP_ERROR,
+                            'Unable to save PIN. Details - {}'.format(st(resp_data))
+                        )
+
+        custom_field_data = {
+            'custom_fields': {
+                custom_field_related: related_count,
+                custom_field_risk: top_risk_score
+            }
+        }
+
+        resp_data = self._send_request(config, '/rest/container/{}'.format(self.get_container_id()), 'post', payload=json.dumps(custom_field_data))
+
+        if not(resp_data.get('success')):
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Unable to update risk assessment. Details - {}'.format(str(resp_data))
+            )
+
+        action_result.update_summary(
+            {
+                'related_events': (related_count or 0),
+                'risk_score': (top_risk_score or 0)
+            }
+        )
+        
+        action_result.add_data({
+            'indicator_results':
+                [{
+                    'indicator': k,
+                    'score': v
+                } for k,v in indicator_list.items()]
+            }
+        )
+
+        return action_result.set_status(phantom.APP_SUCCESS, 'Risk Assessment completed successfully')
     
     def _get_artifact_data_with_ioc(self, config, page_size, order, ioc_id):
         params = {
@@ -359,64 +497,88 @@ class phutilities_connector(BaseConnector):
             )
 
     def _add_ioc_tag(self, param, action_id):
-        ioc_value = param.get('ioc_value')
-        ioc_id = param.get('ioc_id')
-
-        tags_to_add = param.get('tags_to_add','').split(',')
-        tags_to_remove = param.get('tags_to_remove', '').split(',')
-
         action_result = self.add_action_result(ActionResult(dict(param)))
         config = self.get_config()
 
-        if not(ioc_value or ioc_id):
+        ioc_list = param.get('ioc_list')
+        ioc_value = param.get('ioc_value')
+        ioc_id = param.get('ioc_id')
+
+        if ioc_list:
+            try:
+                ioc_list = json.loads(ioc_list)
+            except Exception as err:
+                return action_result.set_status(
+                    phantom.APP_ERROR,
+                    'Could not load ioc_list parmater. Details - {}'.format(str(err))
+                )
+        print str(ioc_list)
+        if not(ioc_value or ioc_id or ioc_list):
             return action_result.set_status(
                 phantom.APP_ERROR,
-                'Either an ioc_value or ioc_id must be provided'
+                'Either an ioc_value, ioc_id, ioc_list must be provided'
             )
-        
-        if not(tags_to_add or tags_to_remove):
+
+        if ioc_list and (ioc_value or ioc_id):
             return action_result.set_status(
                 phantom.APP_ERROR,
-                'Either tags_to_add or tags_to_remove must be provided'
+                'Cannot supply ioc list and either ioc_id or ioc_value.'
             )
 
-        resp_data = self._get_ioc(config, ioc_value, ioc_id)
+        if ioc_value:
+            ioc_list = [{'ioc_value': ioc_value}]
+        elif ioc_id:
+            ioc_list = [{'ioc_id': ioc_id}]
 
-        if 'id' not in resp_data:
-            return action_result.set_status(
-                phantom.APP_ERROR,
-                'Unable to find indicator'
-            )
+        tags_to_add = param.get('tags_to_add', '').split(',')
+        regex_remove = param.get('regex_remove', '')
+        tags_to_remove = param.get('tags_to_remove', '').split(',')
 
-        endpoint = '/rest/indicator/{0}'.format(resp_data['id'])
+        for item in ioc_list:
+            print 'in here'
+            if not(item.get('tags_to_add') or item.get('tags_to_remove') or tags_to_add or tags_to_remove):
+                return action_result.set_status(
+                    phantom.APP_ERROR,
+                    'Either tags_to_add or tags_to_remove must be provided. If using the ioc_list parameter these can be provided in list (e.g. {"ioc_value": "http://www.splunk.com", "tags_to_add": "tag_name"})'
+                )
+            if not(item.get('tags_to_add')):
+                item['tags_to_add'] = tags_to_add
+            if not(item.get('tags_to_remove')):
+                item['tags_to_remove'] = tags_to_remove
 
-        tags = [tag for tag in list(set(tags_to_add + resp_data['tags'])) if tag not in tags_to_remove]
+            resp_data = self._get_ioc(config, item.get('ioc_value'), item.get('ioc_id'))
 
-        payload = {
-            'tags': tags
-        }
+            if 'id' not in resp_data:
+                return action_result.set_status(
+                    phantom.APP_ERROR,
+                    'Unable to find indicator - {}'.format((item.get('ioc_value') or item.get('ioc_id')))
+                )
 
-        self.debug_print('payloado', payload)
+            endpoint = '/rest/indicator/{0}'.format(resp_data['id'])
+            item['tags_to_remove'] = [remover for remover in item['tags_to_remove'] if remover not in item['tags_to_add']]
+            tags = [tag for tag in list(set(item['tags_to_add'] + resp_data['tags'])) if tag not in item['tags_to_remove']]
 
-        tag_resp_data = self._send_request(config, endpoint, 'post', payload=json.dumps(payload))
+            payload = {
+                'tags': tags
+            }
 
-        if not(tag_resp_data.get('success')):
-            return action_result.set_status(
-                phantom.APP_ERROR,
-                'Unable to add tag: ' + str(tag_resp_data)
-            )
-        
-        summary = {
-            'ioc_id': resp_data['id'],
-            'ioc_value': resp_data['value'],
-            'tags': tags
-        }
+            tag_resp_data = self._send_request(config, endpoint, 'post', payload=json.dumps(payload))
 
-        action_result.update_summary(summary)
+            if not(tag_resp_data.get('success')):
+                return action_result.set_status(
+                    phantom.APP_ERROR,
+                    'Unable to add tag: ' + str(tag_resp_data)
+                )
+
+            action_result.add_data({
+                'ioc_id': resp_data['id'],
+                'ioc_value': resp_data['value'],
+                'tags': tags
+            })
 
         return action_result.set_status(
                 phantom.APP_SUCCESS,
-                'Successfully updated tags (' + str(tags) + ') to indicator (' + resp_data['value'] + ')'
+                'Successfully updated tags'
             )
 
     def _change_encoding(self, param, action_id):

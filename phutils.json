@@ -14,7 +14,7 @@
     "min_phantom_version": "3.5.188",
     "logo": "logo_phantom.svg",
     "logo_dark": "logo_phantom_dark.svg",
-    "license": "Copyright (c) 2018-2019 Splunk Inc.",
+    "license": "Copyright (c) 2018-2020 Splunk Inc.",
     "configuration": {
         "base_url": {
             "data_type": "string",
@@ -37,9 +37,45 @@
             "order": 3,
             "description": "Phantom Password"
         },
+        "ioc_tag_prefix": {
+            "data_type": "string",
+            "order": 4,
+            "description": "IOC Risk Tag Prefix (e.g. risk_score-)",
+            "default": "risk_score-"
+        },
+        "ioc_score_threshold": {
+            "data_type": "numeric",
+            "order": 5,
+            "description": "IOC Risk Score Threshold",
+            "default": "5"
+        },
+        "ioc_max_value": {
+            "data_type": "numeric",
+            "order": 6,
+            "description": "IOC Max Risk Score",
+            "default": "10"
+        },
+        "risky_ioc_card": {
+            "data_type": "string",
+            "order": 7,
+            "description": "Risky IOC HUD Card Name",
+            "default": "High Risk IOC"
+        },
+        "custom_field_related": {
+            "data_type": "string",
+            "order": 8,
+            "description": "Related Events Custom Field Name",
+            "default": "Related_Risky_Events"
+        },
+        "custom_field_risk_score": {
+            "data_type": "string",
+            "order": 9,
+            "description": "Risk Score Custom Field Name",
+            "default": "Risk_Score"
+        },
         "verify_certificate": {
             "data_type": "boolean",
-            "order": 4,
+            "order": 10,
             "description": "Verify Server Certificate",
             "default": true
         }
@@ -65,6 +101,116 @@
             "read_only": true,
             "parameters": {},
             "output": [],
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "domain in list",
+            "description": "Checks domain from given URL for presence in custom list",
+            "type": "generic",
+            "identifier": "domain_in_list",
+            "read_only": true,
+            "parameters": {
+                "url": {
+                    "description": "url",
+                    "data_type": "string",
+                    "required": true,
+                    "contains": [
+                        "url"
+                    ],
+                    "primary": true
+                },
+                "custom_list": {
+                    "description": "custom list name",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": false
+                }
+            },
+            "render": {
+                "type": "table",
+                "width": 10,
+                "height": 5,
+                "title": "Deflate Item"
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "column_name": "Status"
+                },
+                {
+                    "data_path": "action_result.parameter.custom_list",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.url",
+                    "data_type": "string",
+                    "column_name": "url",
+                    "column_order": 0
+                },
+                {
+                    "data_path": "action_result.data.*.match",
+                    "data_type": "boolean",
+                    "column_name": "Match",
+                    "column_order": "1"
+                },
+                {
+                    "data_path": "action_result.data.*.matched_domain",
+                    "data_type": "string",
+                    "column_name": "Matched Domain",
+                    "column_order": "2"
+                },
+                {
+                    "data_path": "action_result.summary",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                }
+            ],
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "assess risk",
+            "description": "Assesses risk of container",
+            "verbose": "Will update the fields specified in the Risk Score custom field and Related Events custom field. Assessment is performed based on tags applied to IOCs. Tag should provide a risk score for IOCs and should be prefixed with a static value as to make the easy to identify (e.g. risk_score-). Risk score is determined by looking at the highest scored IOC related to the container. Related Events finds the number of events with IOCs that match IOCs in event being assessed and are of the designated risk score threshold.",
+            "type": "generic",
+            "identifier": "assess_risk",
+            "read_only": false,
+            "parameters": {},
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "column_name": "Status"
+                },
+                {
+                    "data_path": "action_result.data.*.indicator_results.*.indicator",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.indicator_results.*.score",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.summary",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.related_events",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.summary.risk_score",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "column_name": "Message"
+                }
+            ],
             "versions": "EQ(*)"
         },
         {
@@ -276,79 +422,11 @@
             ],
             "versions": "EQ(*)"
         },
-        {
-            "action": "modify indicator tag",
-            "description": "modifies indicator tags",
-            "type": "generic",
-            "identifier": "add_indicator_tag",
-            "read_only": false,
-            "parameters": {
-                "ioc_value": {
-                    "description": "ioc value",
-                    "data_type": "string",
-                    "order": 0,
-                    "required": false
-                },
-                "ioc_id": {
-                    "description": "ioc id",
-                    "data_type": "numeric",
-                    "order": 1,
-                    "required": false
-                },
-                "tags_to_add": {
-                    "description": "tags to add (comma separated)",
-                    "data_type": "string",
-                    "order": 2,
-                    "required": false
-                },
-                "tags_to_remove": {
-                    "description": "tags to remove (comma separated)",
-                    "data_type": "string",
-                    "order": 3,
-                    "required": false
-                }
-            },
-            "output": [
-                {
-                    "data_path": "action_result.status",
-                    "data_type": "string",
-                    "column_name": "Status"
-                },
-                {
-                    "data_path": "action_result.parameter.ioc_id",
-                    "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.parameter.ioc_value",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.parameter.tags_to_add",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.parameter.tags_to_remove",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.data",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.summary",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string",
-                    "column_name": "Message"
-                }
-            ],
-            "versions": "EQ(*)"
-        },
+        
         {
             "action": "get indicator",
-            "description": "Adds tag to indicator",
+            "description": "Gets a Phantom indicator record by value or ID",
+            "verbose": "If the \"include artifact data\" option is checked, the artifacts in which the indicator appears will be returned in the results. An ability to set an artifact limit is provided for use with commonly seen indicators. Use the sorting option to determine whether the artifacts returned are the newest of oldest.",
             "type": "generic",
             "identifier": "get_indicator",
             "read_only": false,
