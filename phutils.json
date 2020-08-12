@@ -5,7 +5,7 @@
     "publisher": "Phantom",
     "type": "Generic",
     "main_module": "phutils_connector.pyc",
-    "app_version": "1.0.1",
+    "app_version": "1.0.2",
     "utctime_updated": "2018-03-09T00:17:26.000000Z",
     "package_name": "phantom_utilities",
     "product_vendor": "Phantom",
@@ -20,7 +20,7 @@
             "data_type": "string",
             "order": 0,
             "description": "Phantom IP/Hostname",
-            "required": true
+            "required": false
         },
         "auth_token": {
             "data_type": "password",
@@ -42,6 +42,19 @@
             "order": 4,
             "description": "Verify Server Certificate",
             "default": true
+        },
+        "url_prompt_handler": {
+            "data_type": "string",
+            "description": "URL Prompt Handler",
+            "verbose":"URL prompt Handler. For example: http://phantom-url-prompt.splunk.link:80/",
+            "default":"http://phantom-url-prompt.splunk.link:80/",
+            "order": 5
+        },
+        "placeholder_domain": {
+            "data_type": "string",
+            "description": "Placeholder URL (end-user URL)",
+            "verbose":"Same as URL Prompt Handler unless you want App to connect to localhost domain and show different Domain while accessing Prompt.",
+            "order": 6
         }
     },
     "pip_dependencies": {
@@ -1446,6 +1459,138 @@
                     "column_order": 2
                 }
             ],
+            "versions": "EQ(*)"
+        }
+        ,
+        {
+            "action": "url prompt",
+            "description": "URL Prompt",
+            "verbose": "Note that the URL Prompt is Cloud based function. You can either use unauthenticated or authenticated prompt.",
+            "type": "generic",
+            "identifier": "url_prompt",
+            "read_only": true,
+            "lock" : {
+                "enabled": false
+            },
+            "parameters": {
+                "mode": {
+                    "description": "Mode",
+                    "data_type": "string",
+                    "default": "Generate URL",
+                    "required": true,
+                    "order": 0,
+                    "value_list": [
+                        "Generate url",
+                        "Wait for Response"
+                    ]
+                },
+                "message": {
+                    "description": "Message for the User",
+                    "default": "Let's block this. Do you concur?",
+                    "data_type": "string",
+                    "required": false,
+                    "order": 1
+                },
+                "options": {
+                    "description": "Comma-separated list of options to be presented to end-user",
+                    "value_list": [
+                        "Yes,No",
+                        "Block,Unblock",
+                        "1,2,3,4,5",
+                        "Low,Medium,High,Severe",
+                        "Custom Message"
+                    ],
+                    "default": "Block,Unblock,Maybe",
+                    "data_type": "string",
+                    "required": false,
+                    "order": 2
+                },
+                "response_url": {
+                    "description": "Input generated url to check response",
+                    "default": ".",
+                    "data_type": "string",
+                    "required": false,
+                    "order": 3
+                },
+                "interval": {
+                    "description": "retry interval",
+                    "data_type": "numeric",
+                    "required": false,
+                    "order": 6
+                },
+                "banner": {
+                    "description": "Banner",
+                    "default": "blizzard Security",
+                    "data_type": "string",
+                    "required": false,
+                    "order": 7
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "column_name": "Status",
+                    "column_order": 1
+                },
+                {
+                    "data_path": "action_result.parameter.mode",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.message",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.header",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.message",
+                    "data_type": "string",
+                    "column_order": 2,
+                    "column_name": "Message / Comment"
+                },
+                {
+                    "data_path": "action_result.data.*.comment",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.selection_string",
+                    "data_type": "string",
+                    "column_order": 3,
+                    "column_name": "Selection String"
+                },
+                {
+                    "data_path": "action_result.data.*.selection_list",
+                    "data_type": "string",
+                    "column_order": 4,
+                    "column_name": "Selection List"
+                },
+                {
+                    "data_path": "action_result.data.*.placeholder",
+                    "data_type": "string",
+                    "column_order": 5,
+                    "column_name": "Ext. URL"
+                },
+                {
+                    "data_path": "action_result.data.*.url",
+                    "data_type": "string",
+                    "column_order": 6,
+                    "column_name": "URL"
+                },
+                {
+                    "data_path": "action_result.summary",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                }
+            ],
+            "render": {
+                "type": "table"
+            },
             "versions": "EQ(*)"
         }
     ]

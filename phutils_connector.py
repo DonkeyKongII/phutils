@@ -66,7 +66,8 @@ class phutilities_connector(BaseConnector):
                 'add_indicator_tag': self._add_ioc_tag,
                 'update_artifact': self._update_artifact,
                 'modify_string': self._modify_string,
-                'update_container': self._update_container
+                'update_container': self._update_container,
+                'url_prompt': self._url_prompt
             }
 
             run_action = supported_actions[action_id]
@@ -76,7 +77,18 @@ class phutilities_connector(BaseConnector):
     def _test_connectivity(self, param, action_id):
 
         config = self.get_config()
+        self.save_progress("=== Test Connectivity to URL Prompt Handler ===")
+        url = config.get('url_prompt_handler', "https://phantom-url-prompt.splunk.link/")
+        resp = requests.get(url)
+        if resp.status_code == 200 and resp.text == "root":
+            self.save_progress("✅ Test Connectivity for URL Prompt passed.")
+        else:
+            self.save_progress("⚠️ Test Connectivity for Prompt failed. ")
+            self.save_progress("Status Code: {} - Response: {}".format(resp.status_code, resp.text))
 
+        self.save_progress(".")
+        self.save_progress(".")
+        self.save_progress("=== Test Connectivity to Phantom API for actions other than 'url prompt' ===")
         try:
             self._send_request(config, '/rest/cef_metadata', 'get')
         except Exception as err:
@@ -226,6 +238,151 @@ class phutilities_connector(BaseConnector):
                 phantom.APP_SUCCESS,
                 'Successfully updated container (ID: {})'.format(container_id)
             )
+
+    def _url_prompt(self, param, action_id):
+        config = self.get_config()
+
+        action_result = self.add_action_result(ActionResult(dict(param)))
+
+        mode = param['mode']
+        mode = mode.lower().strip()
+        message = param.get('message', "Default - Do you concur? ")
+        options = param.get('options', "Default, Yes, No")
+        response_url = param.get('response_url', None)
+        banner = param.get('banner', 'Phantom Prompt')
+        # header = param.get('header', None)
+        email = param.get('email', None)
+        interval = int(param.get('interval', 10))
+
+        placeholder_domain = config.get('placeholder_domain', 'http://dev98-splunk-phantom01.dev.cloud.blizzard.net:81/')
+        url = config.get('url_prompt_handler', "https://phantom-url-prompt.splunk.link/")
+        self.save_progress("[-] Generating URL for Prompt via {}".format(url))
+
+        payload = {}
+        payload['data'] = { "mode": mode,
+                            "message": message,
+                            "options": options,
+                            "response_url": response_url,
+                            "email": email,
+                            "banner": banner}
+        self.save_progress("[-] Payload: {}".format(payload))
+
+        if mode == "generate url":
+            # Get URL
+
+            url = "{}/prompt?action=from_phantom".format(url)
+            result = self.__generate_url(url, payload, action_result)
+
+            self.save_progress("result: {}".format(str(result)))
+            if result == False:
+                return action_result.set_status(
+                    phantom.APP_ERROR,
+                    'Unable to get url for prompt - ' + str(response.text)
+                )
+            # action_result.update_summary(summary)
+            try:
+                pid = result.get('url').split("pid=")[1]
+                result['placeholder'] = "{}/prompt?pid={}".format(placeholder_domain, pid)
+                self.save_progress("\n\n\n----- Placeholder URL -----\n\n\n\n[-] Prompt Link: {}\n\n\n\n".format(result['placeholder']))
+            except Exception as e:
+                self.save_progress("Something's Phishy: {}".fromat(e))
+            action_result.add_data(result)
+            if email is not None:
+                self.send_progress("Email")
+
+        elif mode == "wait for response":
+
+            # Get Response
+            # interval = 1
+            tries = 2880
+            message = ""
+            # Check if response_url is None
+            url = "{}&get_response=yes".format(response_url)
+            self.save_progress("[-] We shall get response at {}".format(url))
+            self.save_progress("[-] Waiting for response")
+            if response_url is not None:
+                try:
+                    while tries != 0:
+                        tries = tries - 1
+                        self.send_progress(".")
+                        result = self.__wait_for_response(url, action_result)
+                        # self.save_progress("result: {}".format(result))
+                        if result.get('user_response', 'No') == "yes":
+                            result['data']['message'] = result['data']['comment']
+                            result['data']['url'] = url
+                            break
+                        else:
+                            time.sleep(interval)
+
+                except Exception as e:
+                    self.save_progress("Error while waiting for response: {}".format(e))
+
+                selection_list = result.get('data').get('selection_list')
+                summary = {
+                    'message': "Number of options selected {}".format(selection_list),
+                    'count': "{}".format(len(selection_list))
+                }
+                action_result.update_summary(summary)
+                action_result.add_data(result.get('data'))
+
+        self.save_progress(".")
+        return action_result.set_status(
+                phantom.APP_SUCCESS,
+                'Successfully performed "{}".'.format(mode)
+            )
+
+    def __generate_url(self, url, payload, action_result):
+        # Generate URL
+        result = {}
+        try:
+            # payload = {'prompt': 'value1', 'header': 'value2'}
+            # headers = {'x-request-from': 'phantom-prompt'}
+            # resp = requests.post(url, data=payload, headers=headers)
+            headers = {'Content-Type': 'application/json'}
+            resp = requests.post(url, json=payload, headers=headers)
+            if resp.status_code != 200:
+                self.send_progress("[-] Status Code: {}".format(resp.status_code))
+                self.send_progress("[-] Error Code: {}".format(resp.text))
+                return action_result.set_status(
+                phantom.APP_ERROR,
+                'Unable to get url for prompt - ' + str(response.texts)
+                )
+            # self.save_progress("[-] Result - {}".format(resp.text))
+            result = resp.json()
+
+        except Exception as err:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Unable to get url for prompt - ' + err.message
+        )
+
+        return result
+
+    def __wait_for_response(self, url, action_result):
+        # Check if User replied
+        # self.save_progress("[-] In __wait_for_response")
+        result = {}
+        try:
+            # payload = {'prompt': 'value1', 'header': 'value2'}
+            # headers = {'x-request-from': 'phantom-prompt'}
+            headers = {'Content-Type': 'application/json'}
+            resp = requests.get(url, headers=headers)
+            if resp.status_code != 200:
+                self.send_progress("[-] Status Code: {}".format(resp.status_code))
+                return action_result.set_status(
+                phantom.APP_ERROR,
+                'Unable to get url for prompt - ' + str(response.texts)
+                )
+            result = resp.json()
+
+        except Exception as err:
+            self.save_progress("Error: {}".format(err))
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                'Unable to get url for prompt - ' + err.message
+        )
+
+        return result
 
     def _update_artifact(self, param, action_id):
         config = self.get_config()
