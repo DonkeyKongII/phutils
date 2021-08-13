@@ -851,6 +851,68 @@
             "versions": "EQ(*)"
         },
         {
+            "action": "defang url",
+            "description": "Returns defanged URLs",
+            "type": "generic",
+            "identifier": "defang_url",
+            "read_only": true,
+            "parameters": {
+                "url": {
+                    "description": "url to defang",
+                    "data_type": "string",
+                    "contains": [
+                        "url"
+                    ],
+                    "required": true,
+                    "primary": true
+                }
+            },
+            "render": {
+                "type": "table",
+                "width": 2,
+                "height": 5,
+                "title": "Search Results"
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "column_name": "Status"
+                },
+                {
+                    "data_path": "action_result.parameter.url",
+                    "data_type": "string",
+                    "contains": [
+                        "url"
+                    ],
+                    "column_order": 0,
+                    "column_name": "Fanged URL"
+                },
+                {
+                    "data_path": "action_result.data.*.defanged_url",
+                    "data_type": "string",
+                    "contains": [
+                        "url"
+                    ],
+                    "column_order": 1,
+                    "column_name": "Defanged URL"
+                },
+                {
+                    "data_path": "action_result.summary.defanged_url",
+                    "data_type": "string",
+                    "contains": [
+                        "url"
+                    ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "column_name": "Message"
+                }
+            ],
+            "versions": "EQ(*)"
+        },
+        {
             "action": "format string",
             "description": "Formats input data",
             "verbose": "Can be used with or without regex. If no regex, then just used to add text around existing string (i.e. create a query that uses a parameter from the existing datapath). If regex, findall is leveraged to find all specified groups. In either case, string format notation is used for modification (use {0} {1} {2}... etc for creating the new string).<br /><br />If no regex and the output_string is 'I love {1}', and the string_to_format is 'Phantom', the resulting string is 'I love Phantom'.",
